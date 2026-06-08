@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/McpDocServer.Application/McpDocServer.Application.csproj" />
+    <Project Path="src/McpDocServer.Domain/McpDocServer.Domain.csproj" />
+    <Project Path="src/McpDocServer.Host/McpDocServer.Host.csproj" />
+    <Project Path="src/McpDocServer.Infrastructure/McpDocServer.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/McpDocServer.IntegrationTests/McpDocServer.IntegrationTests.csproj" />
+    <Project Path="tests/McpDocServer.UnitTests/McpDocServer.UnitTests.csproj" />
+  </Folder>
+</Solution>

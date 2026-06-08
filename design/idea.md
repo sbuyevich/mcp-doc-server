@@ -1,0 +1,1 @@
+i want to create mcp server using .net to help agent to find docs for using internal NuGets and OpenAPI generated clients similar to Context7

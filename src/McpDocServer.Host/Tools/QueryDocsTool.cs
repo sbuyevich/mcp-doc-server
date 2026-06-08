@@ -1,0 +1,28 @@
+using System.ComponentModel;
+using McpDocServer.Application.Abstractions;
+using McpDocServer.Application.Contracts.QueryDocs;
+using ModelContextProtocol.Server;
+
+namespace McpDocServer.Host.Tools;
+
+[McpServerToolType]
+public sealed class QueryDocsTool(IQueryDocsHandler handler)
+{
+    [McpServerTool(
+        Name = "query_docs",
+        UseStructuredContent = true,
+        OutputSchemaType = typeof(QueryDocsResponse))]
+    [Description("Finds version-aware documentation and examples for one internal library.")]
+    public Task<QueryDocsResponse> QueryDocsAsync(
+        [Description("Stable library identifier returned by resolve_library.")] string libraryId,
+        [Description("Concrete implementation question to answer from indexed evidence.")] string question,
+        [Description("Exact package or client version.")] string? version = null,
+        [Description("Target framework used by the calling project, such as net10.0.")] string? targetFramework = null,
+        [Description("Maximum number of evidence results to return.")] int maxResults = 8,
+        CancellationToken cancellationToken = default)
+    {
+        return handler.HandleAsync(
+            new QueryDocsRequest(libraryId, question, version, targetFramework, maxResults),
+            cancellationToken);
+    }
+}
