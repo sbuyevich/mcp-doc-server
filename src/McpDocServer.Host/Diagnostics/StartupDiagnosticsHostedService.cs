@@ -60,9 +60,11 @@ internal sealed class StartupDiagnosticsHostedService(
         }
 
         logger.LogInformation(
-            "MCP documentation server startup checks completed. ToolCount={ToolCount}, LocalCheckCount={LocalCheckCount}",
+            "MCP documentation server startup checks completed. ToolCount={ToolCount}, LocalCheckCount={LocalCheckCount}, NuGetSourceCount={NuGetSourceCount}, DatabasePath={DatabasePath}",
             toolCatalog.Names.Count,
-            localResults.Count);
+            localResults.Count,
+            options.Value.NuGetSources.Count,
+            Path.GetFullPath(options.Value.DatabasePath));
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

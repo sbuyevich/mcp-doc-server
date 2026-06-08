@@ -36,7 +36,8 @@ public sealed class McpDocServerOptionsValidatorTests
                     new NuGetSourceOptions
                     {
                         Name = "internal",
-                        ServiceIndex = "https://packages.example/v3/index.json"
+                        ServiceIndex = "https://packages.example/v3/index.json",
+                        PackageIds = ["Company.Package"]
                     }
                 ],
                 OpenApiSources =
@@ -66,7 +67,8 @@ public sealed class McpDocServerOptionsValidatorTests
                     {
                         Name = "internal",
                         ServiceIndex = "ftp://packages.example/index.json",
-                        PackagePrefixes = ["Company.", ""]
+                        PackagePrefixes = ["Company.", ""],
+                        MaxVersionsPerPackage = 0
                     }
                 ],
                 Indexing = new IndexingOptions
@@ -84,6 +86,29 @@ public sealed class McpDocServerOptionsValidatorTests
         Assert.Contains(result.Failures, failure => failure.Contains("empty package prefix", StringComparison.Ordinal));
         Assert.Contains(result.Failures, failure => failure.Contains("RefreshInterval", StringComparison.Ordinal));
         Assert.Contains(result.Failures, failure => failure.Contains("MaxPackageBytes", StringComparison.Ordinal));
+        Assert.Contains(result.Failures, failure => failure.Contains("MaxVersionsPerPackage", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NuGetSourceRequiresASelectionRule()
+    {
+        var result = _validator.Validate(
+            null,
+            new McpDocServerOptions
+            {
+                NuGetSources =
+                [
+                    new NuGetSourceOptions
+                    {
+                        Name = "internal",
+                        ServiceIndex = "https://packages.example/v3/index.json"
+                    }
+                ]
+            });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure =>
+            failure.Contains("package prefix or package ID", StringComparison.Ordinal));
     }
 
     [Fact]

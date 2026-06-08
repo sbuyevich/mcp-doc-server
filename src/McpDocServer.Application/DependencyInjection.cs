@@ -1,4 +1,5 @@
 using McpDocServer.Application.Abstractions;
+using McpDocServer.Application.Indexing;
 using McpDocServer.Application.Placeholders;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +17,7 @@ public static class DependencyInjection
         services.AddSingleton<IGetSymbolHandler, PlaceholderGetSymbolHandler>();
         services.AddSingleton<IFindApiOperationHandler, PlaceholderFindApiOperationHandler>();
         services.AddSingleton<IListVersionsHandler, PlaceholderListVersionsHandler>();
+        services.AddSingleton<IIndexCoordinator, IndexCoordinator>();
         return services;
     }
 }

@@ -44,6 +44,26 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
             failures.Add("McpDocServer:Indexing:MaxDocumentBytes must be positive.");
         }
 
+        if (options.MaxArchiveEntries <= 0)
+        {
+            failures.Add("McpDocServer:Indexing:MaxArchiveEntries must be positive.");
+        }
+
+        if (options.MaxExtractedBytes <= 0)
+        {
+            failures.Add("McpDocServer:Indexing:MaxExtractedBytes must be positive.");
+        }
+
+        if (!double.IsFinite(options.MaxCompressionRatio) || options.MaxCompressionRatio <= 0)
+        {
+            failures.Add("McpDocServer:Indexing:MaxCompressionRatio must be positive.");
+        }
+
+        if (options.MaxDocumentChars <= 0)
+        {
+            failures.Add("McpDocServer:Indexing:MaxDocumentChars must be positive.");
+        }
+
         if (options.DefaultMaxResults <= 0)
         {
             failures.Add("McpDocServer:Indexing:DefaultMaxResults must be positive.");
@@ -52,6 +72,11 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
         if (options.RequestTimeout <= TimeSpan.Zero)
         {
             failures.Add("McpDocServer:Indexing:RequestTimeout must be positive.");
+        }
+
+        if (options.PackageDownloadTimeout <= TimeSpan.Zero)
+        {
+            failures.Add("McpDocServer:Indexing:PackageDownloadTimeout must be positive.");
         }
     }
 
@@ -85,16 +110,69 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
     {
         foreach (var source in sources)
         {
-            if (!TryGetHttpUri(source.ServiceIndex, out _))
+            if (!IsNuGetSource(source.ServiceIndex))
             {
                 failures.Add(
-                    $"NuGet source '{source.Name}' must have an absolute HTTP or HTTPS ServiceIndex URI.");
+                    $"NuGet source '{source.Name}' must have an absolute HTTP/HTTPS ServiceIndex URI or a valid local path.");
             }
 
             if (source.PackagePrefixes.Any(string.IsNullOrWhiteSpace))
             {
                 failures.Add($"NuGet source '{source.Name}' contains an empty package prefix.");
             }
+
+            if (source.PackageIds.Any(string.IsNullOrWhiteSpace))
+            {
+                failures.Add($"NuGet source '{source.Name}' contains an empty package ID.");
+            }
+
+            if (source.PackagePrefixes.Count == 0 && source.PackageIds.Count == 0)
+            {
+                failures.Add(
+                    $"NuGet source '{source.Name}' must configure at least one package prefix or package ID.");
+            }
+
+            if (source.MaxVersionsPerPackage <= 0)
+            {
+                failures.Add(
+                    $"NuGet source '{source.Name}' MaxVersionsPerPackage must be positive.");
+            }
+
+            if (source.MaxPackages <= 0)
+            {
+                failures.Add($"NuGet source '{source.Name}' MaxPackages must be positive.");
+            }
+        }
+    }
+
+    private static bool IsNuGetSource(string value)
+    {
+        if (TryGetHttpUri(value, out _))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (value.Contains("://", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        try
+        {
+            _ = Path.GetFullPath(value);
+            return true;
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException
+                or NotSupportedException
+                or PathTooLongException)
+        {
+            return false;
         }
     }
 

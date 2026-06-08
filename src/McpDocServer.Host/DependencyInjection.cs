@@ -1,6 +1,8 @@
 using McpDocServer.Application;
+using McpDocServer.Application.Indexing;
 using McpDocServer.Host.Configuration;
 using McpDocServer.Host.Diagnostics;
+using McpDocServer.Host.Indexing;
 using McpDocServer.Host.Tools;
 using McpDocServer.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -26,8 +28,10 @@ public static class DependencyInjection
 
         services.AddApplication();
         services.AddInfrastructure();
+        services.AddSingleton<IIndexingConfigurationProvider, OptionsIndexingConfigurationProvider>();
         services.AddSingleton<ToolRegistrationCatalog>();
         services.AddHostedService<StartupDiagnosticsHostedService>();
+        services.AddHostedService<NuGetIndexingHostedService>();
 
         return services;
     }

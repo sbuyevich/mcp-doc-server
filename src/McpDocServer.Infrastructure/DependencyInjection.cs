@@ -1,4 +1,8 @@
+using McpDocServer.Application.Indexing;
 using McpDocServer.Infrastructure.Diagnostics;
+using McpDocServer.Infrastructure.Indexing;
+using McpDocServer.Infrastructure.NuGet;
+using McpDocServer.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace McpDocServer.Infrastructure;
@@ -11,6 +15,12 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
         services.AddSingleton<ILocalDependencyCheck, LocalDependencyCheck>();
+        services.AddSingleton<IContentHasher, Sha256ContentHasher>();
+        services.AddSingleton<IDocumentChunker, DocumentChunker>();
+        services.AddSingleton<INuGetSourceAuthenticationProvider, AnonymousNuGetSourceAuthenticationProvider>();
+        services.AddSingleton<IPackageSourceClient, NuGetPackageSourceClient>();
+        services.AddSingleton<IPackageProcessor, NuGetPackageProcessor>();
+        services.AddSingleton<IIndexStore, SqliteIndexStore>();
         return services;
     }
 }
