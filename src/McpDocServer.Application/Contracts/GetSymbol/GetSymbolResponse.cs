@@ -42,4 +42,19 @@ public sealed record SymbolDetails
 
     [JsonPropertyName("citationUri")]
     public string? CitationUri { get; init; }
+
+    [JsonPropertyName("relatedMembers")]
+    public IReadOnlyList<RelatedSymbol> RelatedMembers { get; init; } = [];
+}
+
+public sealed record RelatedSymbol
+{
+    [JsonPropertyName("fullyQualifiedName")]
+    public required string FullyQualifiedName { get; init; }
+
+    [JsonPropertyName("kind")]
+    public required string Kind { get; init; }
+
+    [JsonPropertyName("signature")]
+    public required string Signature { get; init; }
 }

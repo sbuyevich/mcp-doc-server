@@ -19,4 +19,6 @@ public sealed class McpDocServerOptions
     public List<RepositorySourceOptions> RepositorySources { get; set; } = [];
 
     public IndexingOptions Indexing { get; set; } = new();
+
+    public RetrievalOptions Retrieval { get; set; } = new();
 }

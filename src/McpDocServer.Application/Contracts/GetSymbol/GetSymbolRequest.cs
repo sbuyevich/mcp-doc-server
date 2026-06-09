@@ -7,4 +7,6 @@ public sealed record GetSymbolRequest(
     string LibraryId,
     string Symbol,
     string? Version = null,
-    string? TargetFramework = null);
+    string? TargetFramework = null,
+    string? ProjectVersion = null,
+    bool IncludePrerelease = false);

@@ -3,13 +3,10 @@
 A .NET 10 Model Context Protocol server for helping coding agents discover and
 correctly use internal NuGet packages and OpenAPI-generated C# clients.
 
-Stage 2 adds safe NuGet package indexing into SQLite and FTS5. The server can
-discover configured package versions, index package metadata, README and XML
-documentation, and inspect public assembly symbols without executing package
-code.
-
-NuGet retrieval tools remain placeholders until Stage 3, so tool calls still
-return a structured `not_ready` response.
+Stage 3 adds version-aware NuGet retrieval over the SQLite/FTS5 index. The
+server can resolve packages, select versions, query README and XML
+documentation, inspect public symbols, and return stable citations without
+executing package code.
 
 ## Prerequisites
 
@@ -51,34 +48,48 @@ Example MCP client configuration:
 
 For a client launched outside the repository, use an absolute project path.
 
-## Tools
+## Test with MCP Inspector
 
-- `resolve_library`: find an internal package or generated client.
-- `query_docs`: retrieve version-aware documentation evidence.
-- `get_symbol`: inspect a public type or member.
-- `find_api_operation`: find an OpenAPI operation and generated-client mapping.
-- `list_versions`: list indexed versions and the recommended version.
+From the repository root:
 
-Until Stage 3, a successful tool invocation returns:
-
-```json
-{
-  "status": "not_ready",
-  "data": null,
-  "resolvedContext": null,
-  "evidence": [],
-  "citations": [],
-  "warnings": [],
-  "errors": [
-    {
-      "code": "stage_not_implemented",
-      "message": "This capability is planned for a later stage."
-    }
-  ]
-}
+```powershell
+npx -y @modelcontextprotocol/inspector dotnet run --project .\src\McpDocServer.Host\McpDocServer.Host.csproj
 ```
 
-`not_ready` is a normal tool result, not an MCP protocol error.
+The Inspector launches the server as a child process. Relative paths such as
+`data/docs.db` are resolved from the directory where the Inspector command is
+run, so use the repository root or configure an absolute `DatabasePath`.
+
+After connecting:
+
+1. Open **Tools** and call `resolve_library` with an indexed package ID.
+2. Pass the returned `nuget:{packageId}` value to `list_versions`.
+3. Call `query_docs` or `get_symbol` with a concrete version.
+4. Open **Resources** to read cited artifact and symbol URIs.
+
+## Tools
+
+- `resolve_library`: find an indexed NuGet package by ID or descriptive text.
+- `query_docs`: retrieve ranked, version-isolated documentation evidence.
+- `get_symbol`: inspect a public type or member, including XML documentation.
+- `find_api_operation`: find an OpenAPI operation and generated-client mapping.
+- `list_versions`: list indexed semantic versions and the recommendation.
+
+The four NuGet tools return structured `ok`, `not_found`, or
+`insufficient_evidence` results. `find_api_operation` remains a structured
+`not_ready` placeholder until the OpenAPI stage.
+
+## Resources
+
+Tool citations can be read through these MCP resource templates:
+
+```text
+nuget://{source}/{packageId}/{version}/artifact/{path}
+nuget://{source}/{packageId}/{version}/symbol/{qualifiedName}
+```
+
+Resources are served only from the local index; retrieval never contacts the
+NuGet feed.
 
 ## Configuration
 
@@ -96,7 +107,7 @@ The root section is `McpDocServer`:
     "OpenApiSources": [],
     "RepositorySources": [],
     "Indexing": {
-      "RunOnStartup": false,
+      "RunOnStartup": true,
       "RefreshInterval": "01:00:00",
       "MaxPackageBytes": 104857600,
       "MaxDocumentBytes": 20971520,
@@ -107,6 +118,14 @@ The root section is `McpDocServer`:
       "DefaultMaxResults": 10,
       "RequestTimeout": "00:00:30",
       "PackageDownloadTimeout": "00:02:00"
+    },
+    "Retrieval": {
+      "DefaultMaxResults": 8,
+      "MaxResults": 25,
+      "MaxResponseBytes": 102400,
+      "QueryTimeout": "00:00:05",
+      "MinimumEvidenceScore": 0.15,
+      "AmbiguousSymbolLimit": 10
     }
   }
 }
@@ -157,3 +176,5 @@ providers.
 - [Stage 1 implementation plan](design/stages/01-skeleton/plan.md)
 - [Stage 2 BRD](design/stages/02-nuget-indexing/brd.md)
 - [Stage 2 implementation plan](design/stages/02-nuget-indexing/plan.md)
+- [Stage 3 BRD](design/stages/03-nuget-retrieval/brd.md)
+- [Stage 3 implementation plan](design/stages/03-nuget-retrieval/plan.md)

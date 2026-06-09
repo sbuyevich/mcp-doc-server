@@ -1,6 +1,7 @@
 using McpDocServer.Application.Abstractions;
 using McpDocServer.Application.Indexing;
 using McpDocServer.Application.Placeholders;
+using McpDocServer.Application.Retrieval;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace McpDocServer.Application;
@@ -12,12 +13,16 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddSingleton<IResolveLibraryHandler, PlaceholderResolveLibraryHandler>();
-        services.AddSingleton<IQueryDocsHandler, PlaceholderQueryDocsHandler>();
-        services.AddSingleton<IGetSymbolHandler, PlaceholderGetSymbolHandler>();
+        services.AddSingleton<IResolveLibraryHandler, ResolveLibraryHandler>();
+        services.AddSingleton<IQueryDocsHandler, QueryDocsHandler>();
+        services.AddSingleton<IGetSymbolHandler, GetSymbolHandler>();
         services.AddSingleton<IFindApiOperationHandler, PlaceholderFindApiOperationHandler>();
-        services.AddSingleton<IListVersionsHandler, PlaceholderListVersionsHandler>();
+        services.AddSingleton<IListVersionsHandler, ListVersionsHandler>();
         services.AddSingleton<IIndexCoordinator, IndexCoordinator>();
+        services.AddSingleton<IVersionResolver, VersionResolver>();
+        services.AddSingleton<ICitationFactory, CitationFactory>();
+        services.AddSingleton<IResponseBudget, ResponseBudget>();
+        services.AddSingleton<IRetrievalLibraryResolver, RetrievalLibraryResolver>();
         return services;
     }
 }

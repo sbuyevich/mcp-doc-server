@@ -24,7 +24,9 @@ internal sealed class McpTestServer : IAsyncDisposable
 
     public McpClient Client { get; }
 
-    public static async Task<McpTestServer> StartAsync(CancellationToken cancellationToken)
+    public static async Task<McpTestServer> StartAsync(
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string?>? configurationValues = null)
     {
         var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(
             new HostApplicationBuilderSettings
@@ -33,11 +35,19 @@ internal sealed class McpTestServer : IAsyncDisposable
                 DisableDefaults = true
             });
 
-        builder.Configuration.AddInMemoryCollection(
-            new Dictionary<string, string?>
+        var values = new Dictionary<string, string?>
             {
                 ["McpDocServer:DatabasePath"] = "data/docs.db"
-            });
+            };
+        if (configurationValues is not null)
+        {
+            foreach (var (key, value) in configurationValues)
+            {
+                values[key] = value;
+            }
+        }
+
+        builder.Configuration.AddInMemoryCollection(values);
 
         builder.Logging.ClearProviders();
         builder.Services.AddMcpDocServerCore(builder.Configuration);

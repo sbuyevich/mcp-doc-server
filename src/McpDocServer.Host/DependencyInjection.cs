@@ -1,8 +1,11 @@
 using McpDocServer.Application;
 using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Retrieval;
 using McpDocServer.Host.Configuration;
 using McpDocServer.Host.Diagnostics;
 using McpDocServer.Host.Indexing;
+using McpDocServer.Host.Retrieval;
+using McpDocServer.Host.Resources;
 using McpDocServer.Host.Tools;
 using McpDocServer.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -29,6 +32,10 @@ public static class DependencyInjection
         services.AddApplication();
         services.AddInfrastructure();
         services.AddSingleton<IIndexingConfigurationProvider, OptionsIndexingConfigurationProvider>();
+        services.AddSingleton<IRetrievalConfigurationProvider>(provider =>
+            new OptionsRetrievalConfigurationProvider(
+                provider.GetRequiredService<IOptions<McpDocServerOptions>>(),
+                configuration));
         services.AddSingleton<ToolRegistrationCatalog>();
         services.AddHostedService<StartupDiagnosticsHostedService>();
         services.AddHostedService<NuGetIndexingHostedService>();
@@ -43,6 +50,7 @@ public static class DependencyInjection
             .WithTools<QueryDocsTool>()
             .WithTools<GetSymbolTool>()
             .WithTools<FindApiOperationTool>()
-            .WithTools<ListVersionsTool>();
+            .WithTools<ListVersionsTool>()
+            .WithResources<NuGetResources>();
     }
 }

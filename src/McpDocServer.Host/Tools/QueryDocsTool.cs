@@ -19,10 +19,19 @@ public sealed class QueryDocsTool(IQueryDocsHandler handler)
         [Description("Exact package or client version.")] string? version = null,
         [Description("Target framework used by the calling project, such as net10.0.")] string? targetFramework = null,
         [Description("Maximum number of evidence results to return.")] int maxResults = 8,
+        [Description("Package version referenced by the calling project.")] string? projectVersion = null,
+        [Description("Whether prerelease versions may be selected.")] bool includePrerelease = false,
         CancellationToken cancellationToken = default)
     {
         return handler.HandleAsync(
-            new QueryDocsRequest(libraryId, question, version, targetFramework, maxResults),
+            new QueryDocsRequest(
+                libraryId,
+                question,
+                version,
+                targetFramework,
+                maxResults,
+                projectVersion,
+                includePrerelease),
             cancellationToken);
     }
 }

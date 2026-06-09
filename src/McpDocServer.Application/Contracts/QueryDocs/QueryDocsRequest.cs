@@ -8,4 +8,6 @@ public sealed record QueryDocsRequest(
     string Question,
     string? Version = null,
     string? TargetFramework = null,
-    int MaxResults = 8);
+    int MaxResults = 8,
+    string? ProjectVersion = null,
+    bool IncludePrerelease = false);

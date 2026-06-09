@@ -9,10 +9,13 @@ internal static class FixtureNuGetPackage
     public const string PackageId = "Fixture.Documentation";
     public const string Version = "1.2.3";
 
-    public static string Create(string feedDirectory)
+    public static string Create(
+        string feedDirectory,
+        string version = Version,
+        string? readmeText = null)
     {
         Directory.CreateDirectory(feedDirectory);
-        var packagePath = Path.Combine(feedDirectory, $"{PackageId}.{Version}.nupkg");
+        var packagePath = Path.Combine(feedDirectory, $"{PackageId}.{version}.nupkg");
 
         using var file = new FileStream(packagePath, FileMode.Create, FileAccess.Write);
         using var archive = new ZipArchive(file, ZipArchiveMode.Create);
@@ -24,7 +27,7 @@ internal static class FixtureNuGetPackage
             <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
               <metadata>
                 <id>{{PackageId}}</id>
-                <version>{{Version}}</version>
+                <version>{{version}}</version>
                 <title>Fixture Documentation</title>
                 <authors>MCP Tests</authors>
                 <description>A deterministic fixture package for documentation indexing.</description>
@@ -44,7 +47,8 @@ internal static class FixtureNuGetPackage
         WriteText(
             archive,
             "README.md",
-            "# Fixture Documentation\n\nThis fixture README explains indexed package behavior.");
+            readmeText
+                ?? $"# Fixture Documentation\n\nVersion {version} explains indexed package behavior.");
         WriteText(
             archive,
             "lib/net10.0/McpDocServer.Domain.xml",

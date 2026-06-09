@@ -16,6 +16,7 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
 
         ValidatePath(options.DatabasePath, "McpDocServer:DatabasePath", failures);
         ValidateLimits(options.Indexing, failures);
+        ValidateRetrieval(options.Retrieval, failures);
         ValidateSourceNames(options, failures);
         ValidateNuGetSources(options.NuGetSources, failures);
         ValidateOpenApiSources(options.OpenApiSources, failures);
@@ -25,6 +26,42 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
         return failures.Count == 0
             ? ValidateOptionsResult.Success
             : ValidateOptionsResult.Fail(failures);
+    }
+
+    private static void ValidateRetrieval(RetrievalOptions options, List<string> failures)
+    {
+        if (options.DefaultMaxResults <= 0)
+        {
+            failures.Add("McpDocServer:Retrieval:DefaultMaxResults must be positive.");
+        }
+
+        if (options.MaxResults <= 0 || options.MaxResults < options.DefaultMaxResults)
+        {
+            failures.Add(
+                "McpDocServer:Retrieval:MaxResults must be positive and at least DefaultMaxResults.");
+        }
+
+        if (options.MaxResponseBytes <= 0)
+        {
+            failures.Add("McpDocServer:Retrieval:MaxResponseBytes must be positive.");
+        }
+
+        if (options.QueryTimeout <= TimeSpan.Zero)
+        {
+            failures.Add("McpDocServer:Retrieval:QueryTimeout must be positive.");
+        }
+
+        if (!double.IsFinite(options.MinimumEvidenceScore)
+            || options.MinimumEvidenceScore is < 0 or > 1)
+        {
+            failures.Add(
+                "McpDocServer:Retrieval:MinimumEvidenceScore must be between 0 and 1.");
+        }
+
+        if (options.AmbiguousSymbolLimit <= 0)
+        {
+            failures.Add("McpDocServer:Retrieval:AmbiguousSymbolLimit must be positive.");
+        }
     }
 
     private static void ValidateLimits(IndexingOptions options, List<string> failures)

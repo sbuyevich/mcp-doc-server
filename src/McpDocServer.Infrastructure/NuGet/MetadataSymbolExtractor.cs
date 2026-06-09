@@ -74,7 +74,14 @@ internal static class MetadataSymbolExtractor
             AddFields(reader, type, typeNamespace, fullTypeName, assemblyPath, targetFramework, symbols);
         }
 
-        return symbols;
+        return symbols
+            .GroupBy(symbol => (
+                symbol.AssemblyPath,
+                symbol.Kind,
+                symbol.FullyQualifiedName,
+                symbol.Signature))
+            .Select(group => group.First())
+            .ToArray();
     }
 
     private static void AddMethods(

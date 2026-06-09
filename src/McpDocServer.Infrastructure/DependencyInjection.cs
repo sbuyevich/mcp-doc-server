@@ -1,8 +1,10 @@
 using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Retrieval;
 using McpDocServer.Infrastructure.Diagnostics;
 using McpDocServer.Infrastructure.Indexing;
 using McpDocServer.Infrastructure.NuGet;
 using McpDocServer.Infrastructure.Persistence;
+using McpDocServer.Infrastructure.Retrieval;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace McpDocServer.Infrastructure;
@@ -21,6 +23,7 @@ public static class DependencyInjection
         services.AddSingleton<IPackageSourceClient, NuGetPackageSourceClient>();
         services.AddSingleton<IPackageProcessor, NuGetPackageProcessor>();
         services.AddSingleton<IIndexStore, SqliteIndexStore>();
+        services.AddSingleton<INuGetReadStore, SqliteNuGetReadStore>();
         return services;
     }
 }

@@ -18,10 +18,18 @@ public sealed class GetSymbolTool(IGetSymbolHandler handler)
         [Description("Fully qualified, simple, or partial symbol name.")] string symbol,
         [Description("Exact package or client version.")] string? version = null,
         [Description("Target framework used by the calling project, such as net10.0.")] string? targetFramework = null,
+        [Description("Package version referenced by the calling project.")] string? projectVersion = null,
+        [Description("Whether prerelease versions may be selected.")] bool includePrerelease = false,
         CancellationToken cancellationToken = default)
     {
         return handler.HandleAsync(
-            new GetSymbolRequest(libraryId, symbol, version, targetFramework),
+            new GetSymbolRequest(
+                libraryId,
+                symbol,
+                version,
+                targetFramework,
+                projectVersion,
+                includePrerelease),
             cancellationToken);
     }
 }
