@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using McpDocServer.Application.Abstractions;
 using McpDocServer.Application.Contracts.ResolveLibrary;
 using ModelContextProtocol.Server;
@@ -19,8 +20,47 @@ public sealed class ResolveLibraryTool(IResolveLibraryHandler handler)
         [Description("Maximum number of library matches to return.")] int limit = 10,
         CancellationToken cancellationToken = default)
     {
+        var request = CreateRequest(query, includePrerelease, limit);
+
         return handler.HandleAsync(
-            new ResolveLibraryRequest(query, includePrerelease, limit),
+            request,
             cancellationToken);
+    }
+
+    private static ResolveLibraryRequest CreateRequest(
+        string query,
+        bool includePrerelease,
+        int limit)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(query);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("query", out var nestedQuery)
+                || nestedQuery.ValueKind != JsonValueKind.String)
+            {
+                return new ResolveLibraryRequest(query, includePrerelease, limit);
+            }
+
+            query = nestedQuery.GetString()!;
+            if (root.TryGetProperty("includePrerelease", out var nestedPrerelease)
+                && nestedPrerelease.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            {
+                includePrerelease = nestedPrerelease.GetBoolean();
+            }
+
+            if (root.TryGetProperty("limit", out var nestedLimit)
+                && nestedLimit.TryGetInt32(out var parsedLimit))
+            {
+                limit = parsedLimit;
+            }
+        }
+        catch (JsonException)
+        {
+            // A normal search query does not need to be valid JSON.
+        }
+
+        return new ResolveLibraryRequest(query, includePrerelease, limit);
     }
 }

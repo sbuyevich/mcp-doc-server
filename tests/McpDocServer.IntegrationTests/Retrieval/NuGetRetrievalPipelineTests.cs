@@ -121,6 +121,26 @@ public sealed class NuGetRetrievalPipelineTests
                     new JsonSerializerOptions(JsonSerializerDefaults.Web));
             Assert.Equal(ToolResultStatus.Ok, toolResponse!.Status);
 
+            var wrappedToolResult = await server.Client.CallToolAsync(
+                "resolve_library",
+                new Dictionary<string, object?>
+                {
+                    ["query"] = JsonSerializer.Serialize(new
+                    {
+                        query = FixtureNuGetPackage.PackageId,
+                        includePrerelease = false,
+                        limit = 10
+                    })
+                },
+                cancellationToken: timeout.Token);
+            var wrappedToolResponse = wrappedToolResult.StructuredContent!.Value
+                .Deserialize<ResolveLibraryResponse>(
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            Assert.Equal(ToolResultStatus.Ok, wrappedToolResponse!.Status);
+            Assert.Equal(
+                FixtureNuGetPackage.PackageId,
+                Assert.Single(wrappedToolResponse.Data!.Matches).DisplayName);
+
             var templates = await server.Client.ListResourceTemplatesAsync(
                 cancellationToken: timeout.Token);
             Assert.Contains(templates, template =>
