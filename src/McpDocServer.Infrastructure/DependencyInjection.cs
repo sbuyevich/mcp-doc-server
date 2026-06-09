@@ -1,5 +1,5 @@
-using McpDocServer.Application.Indexing;
-using McpDocServer.Application.Retrieval;
+using McpDocServer.Application.Indexing.Abstractions;
+using McpDocServer.Application.Retrieval.Abstractions;
 using McpDocServer.Infrastructure.Diagnostics;
 using McpDocServer.Infrastructure.Indexing;
 using McpDocServer.Infrastructure.NuGet;

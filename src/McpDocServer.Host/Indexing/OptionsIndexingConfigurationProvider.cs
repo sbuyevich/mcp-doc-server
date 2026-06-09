@@ -1,4 +1,5 @@
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Abstractions;
+using McpDocServer.Application.Indexing.Models;
 using McpDocServer.Host.Configuration;
 using Microsoft.Extensions.Options;
 

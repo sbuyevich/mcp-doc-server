@@ -1,4 +1,4 @@
-using McpDocServer.Application.Abstractions;
+using McpDocServer.Application.Retrieval.Services;
 using McpDocServer.Host.Configuration;
 using McpDocServer.Host.Tools;
 using McpDocServer.Infrastructure.Diagnostics;

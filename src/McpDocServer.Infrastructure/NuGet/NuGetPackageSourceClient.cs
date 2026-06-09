@@ -1,4 +1,5 @@
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Abstractions;
+using McpDocServer.Application.Indexing.Models;
 using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Protocol;

@@ -1,4 +1,5 @@
-using McpDocServer.Application.Retrieval;
+using McpDocServer.Application.Retrieval.Models;
+using McpDocServer.Application.Retrieval.Services;
 
 namespace McpDocServer.UnitTests.Retrieval;
 

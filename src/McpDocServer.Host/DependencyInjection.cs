@@ -1,6 +1,6 @@
 using McpDocServer.Application;
-using McpDocServer.Application.Indexing;
-using McpDocServer.Application.Retrieval;
+using McpDocServer.Application.Indexing.Abstractions;
+using McpDocServer.Application.Retrieval.Abstractions;
 using McpDocServer.Host.Configuration;
 using McpDocServer.Host.Diagnostics;
 using McpDocServer.Host.Indexing;

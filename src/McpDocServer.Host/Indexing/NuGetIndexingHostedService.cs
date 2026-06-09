@@ -1,4 +1,4 @@
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Services;
 using McpDocServer.Host.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

@@ -1,11 +1,11 @@
 using System.Text.Json;
-using McpDocServer.Application.Abstractions;
 using McpDocServer.Application.Contracts.Common;
 using McpDocServer.Application.Contracts.GetSymbol;
 using McpDocServer.Application.Contracts.ListVersions;
 using McpDocServer.Application.Contracts.QueryDocs;
 using McpDocServer.Application.Contracts.ResolveLibrary;
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Services;
+using McpDocServer.Application.Retrieval.Services;
 using McpDocServer.Host;
 using McpDocServer.IntegrationTests.Indexing;
 using McpDocServer.IntegrationTests.Mcp;

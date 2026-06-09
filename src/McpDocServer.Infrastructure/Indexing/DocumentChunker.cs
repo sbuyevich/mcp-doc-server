@@ -1,6 +1,6 @@
 using System.Text;
 using System.Xml.Linq;
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Abstractions;
 using McpDocServer.Domain.Indexing;
 
 namespace McpDocServer.Infrastructure.Indexing;

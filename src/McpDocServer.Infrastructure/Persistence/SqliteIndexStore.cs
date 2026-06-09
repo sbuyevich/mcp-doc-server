@@ -1,7 +1,8 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Abstractions;
+using McpDocServer.Application.Indexing.Models;
 using McpDocServer.Domain.Indexing;
 using Microsoft.Data.Sqlite;
 

@@ -1,4 +1,5 @@
-using McpDocServer.Application.Retrieval;
+using McpDocServer.Application.Retrieval.Abstractions;
+using McpDocServer.Application.Retrieval.Models;
 using McpDocServer.Host.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;

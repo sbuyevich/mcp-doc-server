@@ -1,4 +1,4 @@
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Abstractions;
 
 namespace McpDocServer.Infrastructure.NuGet;
 

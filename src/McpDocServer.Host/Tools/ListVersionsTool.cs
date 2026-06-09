@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using McpDocServer.Application.Abstractions;
+using McpDocServer.Application.Retrieval.Services;
 using McpDocServer.Application.Contracts.ListVersions;
 using ModelContextProtocol.Server;
 

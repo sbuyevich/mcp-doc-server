@@ -1,0 +1,14 @@
+namespace McpDocServer.Application.Retrieval.Models;
+
+public sealed record LibraryCandidateRecord(
+    string LibraryId,
+    string SourceName,
+    string PackageId,
+    string? Description,
+    string? LatestVersion,
+    bool LatestListed,
+    bool LatestPrerelease,
+    bool LatestDeprecated,
+    bool ExactId,
+    bool PrefixId,
+    double TextScore);

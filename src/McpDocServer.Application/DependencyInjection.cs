@@ -1,6 +1,5 @@
-using McpDocServer.Application.Abstractions;
-using McpDocServer.Application.Indexing;
-using McpDocServer.Application.Retrieval;
+using McpDocServer.Application.Indexing.Services;
+using McpDocServer.Application.Retrieval.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace McpDocServer.Application;

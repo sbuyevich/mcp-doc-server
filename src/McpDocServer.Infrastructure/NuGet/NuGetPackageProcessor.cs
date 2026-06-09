@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Abstractions;
+using McpDocServer.Application.Indexing.Models;
 using McpDocServer.Domain.Indexing;
 using NuGet.Packaging;
 

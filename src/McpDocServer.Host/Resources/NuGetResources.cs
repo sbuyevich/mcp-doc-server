@@ -1,5 +1,6 @@
 using System.ComponentModel;
-using McpDocServer.Application.Retrieval;
+using McpDocServer.Application.Retrieval.Abstractions;
+using McpDocServer.Application.Retrieval.Services;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;

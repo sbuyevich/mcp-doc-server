@@ -1,5 +1,7 @@
 using System.Globalization;
-using McpDocServer.Application.Retrieval;
+using McpDocServer.Application.Retrieval.Abstractions;
+using McpDocServer.Application.Retrieval.Models;
+using McpDocServer.Application.Retrieval.Services;
 using Microsoft.Data.Sqlite;
 
 namespace McpDocServer.Infrastructure.Retrieval;

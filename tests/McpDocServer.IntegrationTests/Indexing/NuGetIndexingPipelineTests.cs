@@ -1,4 +1,4 @@
-using McpDocServer.Application.Indexing;
+using McpDocServer.Application.Indexing.Services;
 using McpDocServer.Host;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;

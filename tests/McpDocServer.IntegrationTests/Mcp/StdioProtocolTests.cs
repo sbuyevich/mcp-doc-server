@@ -18,7 +18,9 @@ public sealed class StdioProtocolTests
                     Command = "dotnet",
                     Arguments =
                     [
-                        HostAssemblyPath()
+                        HostAssemblyPath(),
+                        "--McpDocServer:Transport=stdio",
+                        "--McpDocServer:Indexing:RunOnStartup=false"
                     ],
                     WorkingDirectory = RepositoryRoot(),
                     ShutdownTimeout = TimeSpan.FromSeconds(10),
