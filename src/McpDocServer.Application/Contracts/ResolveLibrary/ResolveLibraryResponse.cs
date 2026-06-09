@@ -21,7 +21,7 @@ public sealed record ResolveLibraryResult
 }
 
 /// <summary>
-/// Candidate package or generated client.
+/// Candidate NuGet package.
 /// </summary>
 public sealed record LibraryMatch
 {

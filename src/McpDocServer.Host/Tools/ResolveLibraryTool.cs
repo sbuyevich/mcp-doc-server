@@ -13,7 +13,7 @@ public sealed class ResolveLibraryTool(IResolveLibraryHandler handler)
         Name = "resolve_library",
         UseStructuredContent = true,
         OutputSchemaType = typeof(ResolveLibraryResponse))]
-    [Description("Finds the best internal NuGet package or generated client for a name or concept.")]
+    [Description("Finds the best indexed NuGet package for a name or concept.")]
     public Task<ResolveLibraryResponse> ResolveLibraryAsync(
         [Description("Package name, client name, or implementation concept to resolve.")] string query,
         [Description("Whether prerelease package versions may be considered.")] bool includePrerelease = false,

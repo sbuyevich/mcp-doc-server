@@ -143,8 +143,6 @@ machine-readable statuses.
 
 ## Out of Scope
 
-- OpenAPI operation retrieval.
-- Generated-client mappings.
 - Repository-derived examples.
 - Semantic/vector search.
 - HTTP transport and user authentication.

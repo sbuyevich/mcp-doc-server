@@ -1,7 +1,7 @@
 # MCP Documentation Server
 
 A .NET 10 Model Context Protocol server for helping coding agents discover and
-correctly use internal NuGet packages and OpenAPI-generated C# clients.
+correctly use internal NuGet packages, including generated API-client packages.
 
 Stage 3 adds version-aware NuGet retrieval over the SQLite/FTS5 index. The
 server can resolve packages, select versions, query README and XML
@@ -50,15 +50,16 @@ For a client launched outside the repository, use an absolute project path.
 
 ## Test with MCP Inspector
 
-From the repository root:
+From the host project directory:
 
 ```powershell
-npx -y @modelcontextprotocol/inspector dotnet run --project .\src\McpDocServer.Host\McpDocServer.Host.csproj
+Set-Location .\src\McpDocServer.Host
+npx -y @modelcontextprotocol/inspector dotnet run --project .\McpDocServer.Host.csproj
 ```
 
-The Inspector launches the server as a child process. Relative paths such as
-`data/docs.db` are resolved from the directory where the Inspector command is
-run, so use the repository root or configure an absolute `DatabasePath`.
+The Inspector launches the server as a child process. Launching from the host
+project directory ensures its `appsettings.json` is loaded. Configure an
+absolute `DatabasePath` when the index should live outside that directory.
 
 After connecting:
 
@@ -72,12 +73,10 @@ After connecting:
 - `resolve_library`: find an indexed NuGet package by ID or descriptive text.
 - `query_docs`: retrieve ranked, version-isolated documentation evidence.
 - `get_symbol`: inspect a public type or member, including XML documentation.
-- `find_api_operation`: find an OpenAPI operation and generated-client mapping.
 - `list_versions`: list indexed semantic versions and the recommendation.
 
-The four NuGet tools return structured `ok`, `not_found`, or
-`insufficient_evidence` results. `find_api_operation` remains a structured
-`not_ready` placeholder until the OpenAPI stage.
+The tools return structured `ok`, `not_found`, or `insufficient_evidence`
+results.
 
 ## Resources
 
@@ -104,7 +103,6 @@ The root section is `McpDocServer`:
     "DatabasePath": "data/docs.db",
     "RecommendedVersions": {},
     "NuGetSources": [],
-    "OpenApiSources": [],
     "RepositorySources": [],
     "Indexing": {
       "RunOnStartup": true,
@@ -169,6 +167,10 @@ Do not place feed credentials or API tokens in these configuration objects.
 Future source integrations will obtain secrets from approved credential
 providers.
 
+Generated API clients require no special configuration. Publish them as NuGet
+packages with a README, XML documentation, and public assemblies, then include
+their package IDs or prefixes in a configured NuGet source.
+
 ## Design
 
 - [Product specification](design/spec.md)
@@ -178,3 +180,5 @@ providers.
 - [Stage 2 implementation plan](design/stages/02-nuget-indexing/plan.md)
 - [Stage 3 BRD](design/stages/03-nuget-retrieval/brd.md)
 - [Stage 3 implementation plan](design/stages/03-nuget-retrieval/plan.md)
+- [Stage 4 BRD](design/stages/04-hardening/brd.md)
+- [Stage 5 BRD](design/stages/05-shared-deployment/brd.md)

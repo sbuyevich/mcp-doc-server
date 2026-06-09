@@ -15,7 +15,7 @@ public abstract record ToolResponse<TData>
     public ToolResultStatus Status { get; init; } = ToolResultStatus.NotReady;
 
     /// <summary>
-    /// Tool-specific payload. This is null for placeholder responses.
+    /// Tool-specific payload. This may be null when no payload is available.
     /// </summary>
     [JsonPropertyName("data")]
     public TData? Data { get; init; }

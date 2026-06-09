@@ -145,8 +145,6 @@ An indexing run must:
 
 - MCP retrieval behavior beyond diagnostics.
 - Natural-language result ranking.
-- OpenAPI documents.
-- Generated-client mapping.
 - Shared HTTP deployment.
 
 ## Exit Gate

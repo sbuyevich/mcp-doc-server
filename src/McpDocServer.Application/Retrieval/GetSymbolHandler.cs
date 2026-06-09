@@ -1,7 +1,6 @@
 using McpDocServer.Application.Abstractions;
 using McpDocServer.Application.Contracts.Common;
 using McpDocServer.Application.Contracts.GetSymbol;
-using McpDocServer.Application.Placeholders;
 
 namespace McpDocServer.Application.Retrieval;
 

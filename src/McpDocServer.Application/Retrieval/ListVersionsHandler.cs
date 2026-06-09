@@ -1,7 +1,6 @@
 using McpDocServer.Application.Abstractions;
 using McpDocServer.Application.Contracts.Common;
 using McpDocServer.Application.Contracts.ListVersions;
-using McpDocServer.Application.Placeholders;
 using NuGet.Versioning;
 
 namespace McpDocServer.Application.Retrieval;

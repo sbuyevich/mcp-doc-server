@@ -49,7 +49,6 @@ public static class DependencyInjection
             .WithTools<ResolveLibraryTool>()
             .WithTools<QueryDocsTool>()
             .WithTools<GetSymbolTool>()
-            .WithTools<FindApiOperationTool>()
             .WithTools<ListVersionsTool>()
             .WithResources<NuGetResources>();
     }

@@ -1,4 +1,4 @@
-# Stage 5 BRD: Hardening
+# Stage 4 BRD: Hardening
 
 ## Purpose
 
@@ -13,8 +13,8 @@ or contain malformed and adversarial content.
 
 ## Dependencies
 
-- Stage 4 completed.
-- Representative NuGet and OpenAPI sources.
+- Stage 3 completed.
+- Representative NuGet sources, including a generated API-client package.
 - At least one supported coding-agent client for acceptance testing.
 
 ## In Scope
@@ -75,7 +75,6 @@ Verify and test:
 - ZIP path traversal prevention.
 - Decompression-bomb defenses.
 - Metadata-only assembly inspection.
-- OpenAPI reference restrictions.
 - Secret and excluded-path filtering.
 - Prompt-injection resistance at the retrieval boundary.
 
@@ -102,7 +101,7 @@ Run scripted scenarios proving that an agent can:
 - Resolve a package from a concept.
 - Select or honor an exact version.
 - Find a symbol and use its real signature.
-- Find an API operation and generated client method.
+- Resolve a generated API-client package and find a real client method.
 - Cite the returned source.
 - Decline to invent an unknown API.
 
@@ -153,5 +152,5 @@ Observed failure modes must become automated regression tests where practical.
 
 ## Exit Gate
 
-Stage 6 may begin when the stdio service is stable under refresh, failure,
+Stage 5 may begin when the stdio service is stable under refresh, failure,
 malformed input, and representative agent workloads.

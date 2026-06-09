@@ -14,8 +14,6 @@ public sealed class McpDocServerOptions
 
     public List<NuGetSourceOptions> NuGetSources { get; set; } = [];
 
-    public List<OpenApiSourceOptions> OpenApiSources { get; set; } = [];
-
     public List<RepositorySourceOptions> RepositorySources { get; set; } = [];
 
     public IndexingOptions Indexing { get; set; } = new();

@@ -1,1 +1,3 @@
-i want to create mcp server using .net to help agent to find docs for using internal NuGets and OpenAPI generated clients similar to Context7
+Create a .NET MCP server that helps coding agents find grounded documentation
+and public APIs for internal NuGet packages, including generated API clients,
+with version-aware evidence and citations similar to Context7.

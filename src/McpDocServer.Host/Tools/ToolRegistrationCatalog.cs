@@ -10,7 +10,6 @@ public sealed class ToolRegistrationCatalog
         "resolve_library",
         "query_docs",
         "get_symbol",
-        "find_api_operation",
         "list_versions"
     ];
 

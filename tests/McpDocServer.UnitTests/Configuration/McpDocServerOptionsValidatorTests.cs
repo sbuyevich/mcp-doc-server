@@ -40,12 +40,12 @@ public sealed class McpDocServerOptionsValidatorTests
                         PackageIds = ["Company.Package"]
                     }
                 ],
-                OpenApiSources =
+                RepositorySources =
                 [
-                    new OpenApiSourceOptions
+                    new RepositorySourceOptions
                     {
                         Name = "Internal",
-                        Location = "https://apis.example/openapi.json"
+                        RootPath = "repositories/internal"
                     }
                 ]
             });

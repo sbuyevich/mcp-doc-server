@@ -1,4 +1,4 @@
-# Stage 6 BRD: Shared Deployment
+# Stage 5 BRD: Shared Deployment
 
 ## Purpose
 
@@ -13,7 +13,7 @@ permitted to access.
 
 ## Dependencies
 
-- Stage 5 completed.
+- Stage 4 completed.
 - Organization identity-provider requirements.
 - Hosting platform and deployment standards.
 - Defined source ownership and access policies.
@@ -60,7 +60,7 @@ Authorization must apply to:
 - MCP tool invocation.
 - Library discovery.
 - Search results.
-- Symbol and operation details.
+- Symbol details.
 - MCP resource retrieval.
 - Administrative refresh operations.
 
@@ -82,7 +82,7 @@ Default policy must deny access when no rule matches.
 
 ### FR-5: Secrets
 
-Feed, repository, OpenAPI, and database credentials must come from approved
+Feed, repository, and database credentials must come from approved
 secret-management or workload-identity mechanisms.
 
 Secrets must not be stored in:

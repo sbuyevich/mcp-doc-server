@@ -15,7 +15,6 @@ internal sealed class StartupDiagnosticsHostedService(
     IResolveLibraryHandler resolveLibraryHandler,
     IQueryDocsHandler queryDocsHandler,
     IGetSymbolHandler getSymbolHandler,
-    IFindApiOperationHandler findApiOperationHandler,
     IListVersionsHandler listVersionsHandler,
     ILogger<StartupDiagnosticsHostedService> logger) : IHostedService
 {
@@ -24,7 +23,6 @@ internal sealed class StartupDiagnosticsHostedService(
         _ = resolveLibraryHandler;
         _ = queryDocsHandler;
         _ = getSymbolHandler;
-        _ = findApiOperationHandler;
         _ = listVersionsHandler;
 
         if (!toolCatalog.Names.SequenceEqual(ToolRegistrationCatalog.ExpectedNames, StringComparer.Ordinal))

@@ -19,7 +19,6 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
         ValidateRetrieval(options.Retrieval, failures);
         ValidateSourceNames(options, failures);
         ValidateNuGetSources(options.NuGetSources, failures);
-        ValidateOpenApiSources(options.OpenApiSources, failures);
         ValidateRepositorySources(options.RepositorySources, failures);
         ValidateRecommendedVersions(options.RecommendedVersions, failures);
 
@@ -120,7 +119,6 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
     private static void ValidateSourceNames(McpDocServerOptions options, List<string> failures)
     {
         var names = options.NuGetSources.Select(source => source.Name)
-            .Concat(options.OpenApiSources.Select(source => source.Name))
             .Concat(options.RepositorySources.Select(source => source.Name))
             .ToList();
 
@@ -210,33 +208,6 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
                 or PathTooLongException)
         {
             return false;
-        }
-    }
-
-    private static void ValidateOpenApiSources(
-        IEnumerable<OpenApiSourceOptions> sources,
-        List<string> failures)
-    {
-        foreach (var source in sources)
-        {
-            if (string.IsNullOrWhiteSpace(source.Location))
-            {
-                failures.Add($"OpenAPI source '{source.Name}' must have a location.");
-                continue;
-            }
-
-            if (Uri.TryCreate(source.Location, UriKind.Absolute, out var uri))
-            {
-                if (uri.Scheme is not ("http" or "https" or "file"))
-                {
-                    failures.Add(
-                        $"OpenAPI source '{source.Name}' must use HTTP, HTTPS, file, or a valid local path.");
-                }
-
-                continue;
-            }
-
-            ValidatePath(source.Location, $"OpenAPI source '{source.Name}' location", failures);
         }
     }
 

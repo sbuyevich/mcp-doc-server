@@ -10,6 +10,6 @@ public sealed class StartupDiagnosticsTests
 
         var tools = await server.Client.ListToolsAsync(cancellationToken: timeout.Token);
 
-        Assert.NotEmpty(tools);
+        Assert.Equal(4, tools.Count);
     }
 }
