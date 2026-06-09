@@ -8,6 +8,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\McpDocServer.Application\McpDocServer.Application.csproj" />
+    <ProjectReference Include="..\McpDocServer.Configuration\McpDocServer.Configuration.csproj" />
     <ProjectReference Include="..\McpDocServer.Infrastructure\McpDocServer.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>

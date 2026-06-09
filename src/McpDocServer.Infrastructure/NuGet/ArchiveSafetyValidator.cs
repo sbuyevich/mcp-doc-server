@@ -1,5 +1,5 @@
 using System.IO.Compression;
-using McpDocServer.Application.Indexing.Models;
+using McpDocServer.Indexing.Models;
 
 namespace McpDocServer.Infrastructure.NuGet;
 

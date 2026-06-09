@@ -184,17 +184,22 @@ successful index.
 
 ## 12. Architecture
 
-- `Domain`: package indexing records and stable value types.
-- `Application`: indexing orchestration, retrieval handlers, contracts, and
-  policies.
+- `Configuration`: shared Host and Worker option contracts and validation.
+- `Indexing`: package indexing records, abstractions, orchestration, and stable
+  value types.
+- `Application`: retrieval handlers, MCP contracts, and policies.
 - `Infrastructure`: NuGet access, archive processing, metadata extraction,
   SQLite, and FTS5.
-- `Host`: MCP stdio transport, configuration, startup diagnostics, tools, and
-  resources.
+- `Host`: retrieval-only MCP transports, diagnostics, tools, and resources.
+- `Indexing.Worker`: sole index writer, immediate and scheduled refreshes, and
+  one-shot execution.
 
-Domain code must not depend on Host or Infrastructure.
+Configuration, Indexing, and Application have no project references. Host does
+not register indexing services or contact package sources.
 
 ## 13. Configuration
+
+Host:
 
 ```json
 {
@@ -203,6 +208,19 @@ Domain code must not depend on Host or Infrastructure.
     "RecommendedVersions": {
       "Company.Customer.Client": "4.2.0"
     },
+    "Retrieval": {
+      "SourceOrder": ["internal"]
+    }
+  }
+}
+```
+
+Worker:
+
+```json
+{
+  "McpDocServer": {
+    "DatabasePath": "data/docs.db",
     "NuGetSources": [
       {
         "Name": "internal",
@@ -215,7 +233,10 @@ Domain code must not depend on Host or Infrastructure.
         "MaxPackages": 100
       }
     ],
-    "RepositorySources": []
+    "RepositorySources": [],
+    "Indexing": {
+      "RefreshInterval": "01:00:00"
+    }
   }
 }
 ```
@@ -239,7 +260,7 @@ validation, diagnostics, and test projects.
 ### Stage 2: NuGet indexing
 
 Build safe package ingestion, metadata and documentation extraction, symbol
-inspection, SQLite persistence, and FTS5 indexing.
+inspection, SQLite persistence, FTS5 indexing, and a dedicated Worker process.
 
 ### Stage 3: NuGet retrieval
 

@@ -20,6 +20,24 @@ dotnet build .\McpDocServer.slnx --no-restore
 dotnet test .\McpDocServer.slnx --no-build --no-restore
 ```
 
+## Run the indexing worker
+
+The Worker is the only process that writes the index. Run it continuously:
+
+```powershell
+dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj
+```
+
+It indexes immediately, then waits for `Indexing:RefreshInterval` after each
+completed run before starting the next one. To perform one refresh and exit:
+
+```powershell
+dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj -- --once
+```
+
+One-shot execution exits `0` after a successful run or when no sources are
+configured. It exits `1` after a failed or partially successful run.
+
 ## Run over stdio
 
 ```powershell
@@ -114,10 +132,11 @@ NuGet feed.
 
 ## Configuration
 
-Configuration is read from `appsettings.json`, environment variables, and
-command-line configuration using standard .NET configuration rules.
+The Host and Worker have separate `appsettings.json` files. Both use the
+`McpDocServer` root section and standard .NET environment-variable and
+command-line overrides.
 
-The root section is `McpDocServer`:
+Host configuration:
 
 ```json
 {
@@ -129,22 +148,8 @@ The root section is `McpDocServer`:
     },
     "DatabasePath": "data/docs.db",
     "RecommendedVersions": {},
-    "NuGetSources": [],
-    "RepositorySources": [],
-    "Indexing": {
-      "RunOnStartup": true,
-      "RefreshInterval": "01:00:00",
-      "MaxPackageBytes": 104857600,
-      "MaxDocumentBytes": 20971520,
-      "MaxArchiveEntries": 10000,
-      "MaxExtractedBytes": 524288000,
-      "MaxCompressionRatio": 200,
-      "MaxDocumentChars": 4000,
-      "DefaultMaxResults": 10,
-      "RequestTimeout": "00:00:30",
-      "PackageDownloadTimeout": "00:02:00"
-    },
     "Retrieval": {
+      "SourceOrder": [ "internal" ],
       "DefaultMaxResults": 8,
       "MaxResults": 25,
       "MaxResponseBytes": 102400,
@@ -156,15 +161,41 @@ The root section is `McpDocServer`:
 }
 ```
 
+Worker configuration:
+
+```json
+{
+  "McpDocServer": {
+    "DatabasePath": "data/docs.db",
+    "NuGetSources": [],
+    "RepositorySources": [],
+    "Indexing": {
+      "RefreshInterval": "01:00:00",
+      "MaxPackageBytes": 104857600,
+      "MaxDocumentBytes": 20971520,
+      "MaxArchiveEntries": 10000,
+      "MaxExtractedBytes": 524288000,
+      "MaxCompressionRatio": 200,
+      "MaxDocumentChars": 4000,
+      "PackageDownloadTimeout": "00:02:00"
+    }
+  }
+}
+```
+
 Environment variables use double underscores:
 
 ```powershell
 $env:McpDocServer__DatabasePath = "C:\mcp-doc-server\data\docs.db"
 ```
 
-Source collections may be empty. Startup validates configured names, URIs,
-paths, versions, intervals, and limits. NuGet sources are contacted only when
-`Indexing:RunOnStartup` is `true`.
+Source collections may be empty. The Host validates transport and retrieval
+settings independently from the Worker, which validates source definitions and
+indexing limits. The Host never contacts NuGet sources.
+
+`Retrieval:SourceOrder` controls source precedence without requiring source
+definitions in the Host. Give both processes the same `DatabasePath`; when it
+is relative, launch both from the same working directory.
 
 Example NuGet source:
 

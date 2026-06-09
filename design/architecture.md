@@ -5,46 +5,60 @@
 McpDocServer is a .NET MCP server that indexes NuGet packages and exposes their
 documentation, metadata, versions, and public symbols as version-aware evidence.
 
-The solution follows a layered architecture:
+The solution separates MCP retrieval from index production:
 
 ```mermaid
 flowchart TD
     Client[MCP client]
     Host[McpDocServer.Host]
+    Worker[McpDocServer.Indexing.Worker]
+    Configuration[McpDocServer.Configuration]
     Application[McpDocServer.Application]
+    Indexing[McpDocServer.Indexing]
     Infrastructure[McpDocServer.Infrastructure]
-    Domain[McpDocServer.Domain]
     NuGet[NuGet source]
     Database[(SQLite and FTS5)]
 
     Client -->|stdio or Streamable HTTP| Host
     Host --> Application
+    Host --> Configuration
     Host --> Infrastructure
+    Worker --> Configuration
+    Worker --> Indexing
+    Worker --> Infrastructure
     Infrastructure --> Application
-    Application --> Domain
+    Infrastructure --> Indexing
     Infrastructure --> NuGet
     Infrastructure --> Database
 ```
 
-Dependencies point inward. Domain has no project dependencies, Application
-depends only on Domain, Infrastructure implements Application abstractions, and
-Host is the composition root.
+Configuration, Application, and Indexing have no project references.
+Infrastructure implements abstractions from Application and Indexing. Host is
+the retrieval composition root, while Worker is the indexing composition root.
 
 ## Projects
 
-### McpDocServer.Domain
+### McpDocServer.Configuration
 
-Contains persistence-independent indexing data:
+Contains shared Host and Worker option contracts and their independent
+validators. It has no dependency on either executable or feature project.
+
+### McpDocServer.Indexing
+
+Contains the complete source-neutral indexing feature:
 
 - Package identities and stable ID generation.
 - Package metadata, artifacts, document chunks, symbols, dependencies, and
   target frameworks.
+- Configuration, source, processing, hashing, and storage abstractions.
+- Indexing orchestration, run results, limits, and downloaded-package lifetime
+  management.
 - No NuGet, SQLite, MCP, hosting, or configuration dependencies.
 
 ### McpDocServer.Application
 
-Contains use cases, public MCP contracts, and interfaces implemented by outer
-layers.
+Contains retrieval use cases, public MCP contracts, and interfaces implemented
+by outer layers.
 
 The project is organized by feature:
 
@@ -56,11 +70,6 @@ Contracts/
   QueryDocs/
   GetSymbol/
 
-Indexing/
-  Models/
-  Abstractions/
-  Services/
-
 Retrieval/
   Models/
   Abstractions/
@@ -68,20 +77,18 @@ Retrieval/
 ```
 
 - `Contracts` contains the request and response models serialized by MCP tools.
-- `Models` contains internal feature data passed between application and
+- Retrieval `Models` contain data passed between application and
   infrastructure.
-- `Abstractions` defines configuration, storage, package-processing, and source
-  boundaries.
-- `Services` contains executable application behavior such as handlers,
-  orchestration, version resolution, citation generation, and response
-  budgeting.
+- Retrieval `Abstractions` define configuration and read-store boundaries.
+- Retrieval `Services` contain handlers, version resolution, citation
+  generation, and response budgeting.
 
 Application services do not depend on concrete NuGet, SQLite, or transport
 implementations.
 
 ### McpDocServer.Infrastructure
 
-Implements Application abstractions using external technologies:
+Implements Application and Indexing abstractions using external technologies:
 
 - NuGet package discovery and download through `NuGet.Protocol`.
 - Safe `.nupkg` inspection without loading or executing package assemblies.
@@ -91,19 +98,19 @@ Implements Application abstractions using external technologies:
 - SQLite schema management, atomic index publication, and FTS5 search.
 - Retrieval of indexed documents, versions, symbols, and MCP resources.
 
-Infrastructure depends on Application, and transitively Domain. It must not
-contain MCP tool or transport behavior.
+Infrastructure depends on Application and Indexing. It must not contain MCP
+tool or transport behavior.
 
 ### McpDocServer.Host
 
 Is the executable and composition root:
 
 - Loads and validates configuration.
-- Registers Application and Infrastructure implementations.
+- Registers Application and retrieval-only Infrastructure implementations.
 - Selects one transport per process.
 - Exposes the four MCP tools and NuGet resource templates.
-- Runs startup diagnostics and optional startup indexing.
-- Converts host configuration into Application settings.
+- Runs retrieval startup diagnostics.
+- Converts Host configuration into Application retrieval settings.
 
 Supported transports are:
 
@@ -111,20 +118,37 @@ Supported transports are:
 - Stateless Streamable HTTP, mapped to the configured endpoint path. Local
   unauthenticated HTTP is restricted to a loopback address.
 
+The Host contains no index writer or indexing schedule. Its availability is
+independent of source refresh duration and failures.
+
+### McpDocServer.Indexing.Worker
+
+Is the sole index-writing executable and indexing composition root:
+
+- Loads and validates database, source, schedule, and processing settings.
+- Runs one refresh immediately at startup.
+- Waits `RefreshInterval` after each completed run before repeating.
+- Executes refreshes sequentially, so one process never overlaps its own runs.
+- Supports `--once` for manual or scheduled one-shot refreshes.
+- Exits `0` for success or no configured sources and `1` for failed,
+  partially successful, or unhandled runs in one-shot mode.
+
 ## Dependency Rules
 
 ```text
-Domain          -> no project references
-Application     -> Domain
-Infrastructure  -> Application
-Host            -> Application + Infrastructure
-Tests           -> projects required by each test scenario
+Configuration  -> no project references
+Application    -> no project references
+Indexing       -> no project references
+Infrastructure -> Application + Indexing
+Host           -> Application + Configuration + Infrastructure
+Worker         -> Configuration + Indexing + Infrastructure
+Tests          -> projects required by each test scenario
 ```
 
-The Application layer owns interfaces because it defines the behavior it needs.
-Infrastructure supplies implementations through dependency injection. Host
-selects and wires those implementations but does not implement indexing or
-retrieval business logic.
+Application and Indexing own the interfaces required by their respective
+features. Infrastructure supplies implementations through dependency injection.
+Host and Worker select only the implementations required by their respective
+processes and do not implement indexing or retrieval business logic.
 
 Architecture tests enforce the inner project dependency rules.
 
@@ -132,14 +156,14 @@ Architecture tests enforce the inner project dependency rules.
 
 ```mermaid
 sequenceDiagram
-    participant Hosted as NuGetIndexingHostedService
+    participant Worker as Indexing Worker
     participant Coordinator as IndexCoordinator
     participant Source as IPackageSourceClient
     participant Processor as IPackageProcessor
     participant Store as IIndexStore
     participant DB as SQLite/FTS5
 
-    Hosted->>Coordinator: IndexAllAsync
+    Worker->>Coordinator: IndexAllAsync
     Coordinator->>Store: Initialize database
     Coordinator->>Source: Discover package versions
     loop Each package version
@@ -205,10 +229,14 @@ or symbol referenced by a citation.
 Dependency injection registrations are split by ownership:
 
 - `Application.AddApplication()` registers handlers and application services.
-- `Infrastructure.AddInfrastructure()` registers NuGet, processing, hashing,
-  SQLite, and retrieval implementations.
-- `Host.AddMcpDocServerCore()` binds configuration, composes both layers, and
-  registers hosted services.
+- `Indexing.AddIndexing()` registers indexing orchestration.
+- `Infrastructure.AddRetrievalInfrastructure()` registers SQLite retrieval
+  implementations.
+- `Infrastructure.AddIndexingInfrastructure()` registers NuGet, processing,
+  hashing, and SQLite index-writing implementations.
+- `Host.AddMcpDocServerCore()` binds Host configuration and composes retrieval.
+- `Worker.AddIndexingWorkerCore()` binds Worker configuration and composes
+  indexing.
 - `Host.WithMcpDocServerTools()` publishes tools and resources through the
   selected MCP transport.
 
@@ -218,23 +246,23 @@ objects and cancellation scopes.
 
 ## Testing Strategy
 
-- Unit tests cover domain behavior, configuration validation, archive safety,
+- Unit tests cover indexing models, configuration validation, archive safety,
   extraction, version selection, serialization, and architecture rules.
 - Integration tests build fixture NuGet packages, index them into temporary
   SQLite databases, and exercise the complete retrieval pipeline.
 - MCP tests verify tool discovery, invocation, resources, stdio, and stateless
   HTTP behavior.
-- Child-process tests verify the packaged Host configuration and transport
-  startup rather than only in-process service registration.
+- Child-process tests verify packaged Host transport startup and Worker
+  one-shot exit behavior rather than only in-process service registration.
 
 ## Extension Guidelines
 
-- Add new external integrations behind an Application abstraction.
+- Add new retrieval integrations behind an Application abstraction and new
+  indexing integrations behind an Indexing abstraction.
 - Keep MCP wire shapes in `Application.Contracts`; do not reuse persistence
   records as transport contracts.
 - Keep feature behavior in feature-local `Services`, not in Host tools or
   Infrastructure implementations.
-- Add persisted concepts to Domain only when they are independent of SQLite or
-  NuGet APIs.
+- Keep indexing models source-neutral and independent of SQLite and NuGet APIs.
 - Preserve package-version isolation and citation traceability for every new
   retrieval capability.

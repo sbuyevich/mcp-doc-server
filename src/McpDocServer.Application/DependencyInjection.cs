@@ -1,4 +1,3 @@
-using McpDocServer.Application.Indexing.Services;
 using McpDocServer.Application.Retrieval.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,7 +14,6 @@ public static class DependencyInjection
         services.AddSingleton<IQueryDocsHandler, QueryDocsHandler>();
         services.AddSingleton<IGetSymbolHandler, GetSymbolHandler>();
         services.AddSingleton<IListVersionsHandler, ListVersionsHandler>();
-        services.AddSingleton<IIndexCoordinator, IndexCoordinator>();
         services.AddSingleton<IVersionResolver, VersionResolver>();
         services.AddSingleton<ICitationFactory, CitationFactory>();
         services.AddSingleton<IResponseBudget, ResponseBudget>();

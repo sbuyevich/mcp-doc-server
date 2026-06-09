@@ -1,7 +1,7 @@
 using System.Text;
 using System.Xml.Linq;
-using McpDocServer.Application.Indexing.Abstractions;
-using McpDocServer.Domain.Indexing;
+using McpDocServer.Indexing.Abstractions;
+using McpDocServer.Indexing.Models;
 
 namespace McpDocServer.Infrastructure.Indexing;
 

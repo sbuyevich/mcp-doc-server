@@ -1,5 +1,5 @@
-using McpDocServer.Application.Indexing.Services;
-using McpDocServer.Host;
+using McpDocServer.Indexing.Services;
+using McpDocServer.Indexing.Worker;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,7 +81,7 @@ public sealed class NuGetIndexingPipelineTests
 
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddMcpDocServerCore(configuration);
+        services.AddIndexingWorkerCore(configuration);
         return services.BuildServiceProvider(validateScopes: true);
     }
 

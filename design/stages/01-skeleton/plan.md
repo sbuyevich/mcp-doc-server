@@ -16,17 +16,21 @@ search index.
   error.
 - Use explicit tool registration so the public MCP surface is reviewed.
 - Use `System.Text.Json` contracts with stable property names.
-- Keep dependencies directed from Host to Application and Infrastructure, with
-  Domain independent of both.
+- Keep Configuration, Application, and Indexing free of project references.
+  Infrastructure depends on Application and Indexing; the Host depends on
+  Application, Configuration, and Infrastructure; the Worker depends on
+  Configuration, Indexing, and Infrastructure.
 
 ## Project Structure
 
 ```text
 src/
-  McpDocServer.Domain/
+  McpDocServer.Configuration/
   McpDocServer.Application/
+  McpDocServer.Indexing/
   McpDocServer.Infrastructure/
   McpDocServer.Host/
+  McpDocServer.Indexing.Worker/
 tests/
   McpDocServer.UnitTests/
   McpDocServer.IntegrationTests/
@@ -60,7 +64,7 @@ warnings, and errors. Request handlers accept cancellation tokens.
 
 ## Startup And Registration
 
-1. Bind and validate configuration during host startup.
+1. Bind and validate retrieval configuration during Host startup.
 2. Register Application and Infrastructure services through extension methods.
 3. Register all four tool classes explicitly.
 4. Configure stdio transport.

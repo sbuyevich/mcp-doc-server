@@ -1,5 +1,5 @@
 using McpDocServer.Application.Retrieval.Services;
-using McpDocServer.Host.Configuration;
+using McpDocServer.Configuration;
 using McpDocServer.Host.Tools;
 using McpDocServer.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Hosting;
@@ -58,10 +58,9 @@ internal sealed class StartupDiagnosticsHostedService(
         }
 
         logger.LogInformation(
-            "MCP documentation server startup checks completed. ToolCount={ToolCount}, LocalCheckCount={LocalCheckCount}, NuGetSourceCount={NuGetSourceCount}, DatabasePath={DatabasePath}",
+            "MCP documentation server startup checks completed. ToolCount={ToolCount}, LocalCheckCount={LocalCheckCount}, DatabasePath={DatabasePath}",
             toolCatalog.Names.Count,
             localResults.Count,
-            options.Value.NuGetSources.Count,
             Path.GetFullPath(options.Value.DatabasePath));
     }
 
