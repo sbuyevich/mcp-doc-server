@@ -15,6 +15,68 @@ public sealed class McpDocServerOptionsValidatorTests
         Assert.Equal(ValidateOptionsResult.Success, result);
     }
 
+    [Theory]
+    [InlineData("stdio")]
+    [InlineData("http")]
+    public void SupportedTransportIsValid(string transport)
+    {
+        var result = _validator.Validate(
+            null,
+            new McpDocServerOptions { Transport = transport });
+
+        Assert.Equal(ValidateOptionsResult.Success, result);
+    }
+
+    [Fact]
+    public void UnsupportedTransportFails()
+    {
+        var result = _validator.Validate(
+            null,
+            new McpDocServerOptions { Transport = "websocket" });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure =>
+            failure.Contains("Transport", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("https://127.0.0.1:5034")]
+    [InlineData("http://0.0.0.0:5034")]
+    [InlineData("http://example.com:5034")]
+    [InlineData("not-a-url")]
+    public void UnsafeHttpUrlFails(string url)
+    {
+        var result = _validator.Validate(
+            null,
+            new McpDocServerOptions
+            {
+                Http = new HttpHostOptions { Url = url }
+            });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure =>
+            failure.Contains("Http:Url", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("mcp")]
+    [InlineData("/mcp?mode=test")]
+    [InlineData("/mcp#fragment")]
+    public void InvalidHttpPathFails(string path)
+    {
+        var result = _validator.Validate(
+            null,
+            new McpDocServerOptions
+            {
+                Http = new HttpHostOptions { Path = path }
+            });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure =>
+            failure.Contains("Http:Path", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void EmptyDatabasePathFails()
     {

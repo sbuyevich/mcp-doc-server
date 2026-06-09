@@ -14,6 +14,7 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
 
         var failures = new List<string>();
 
+        ValidateTransport(options, failures);
         ValidatePath(options.DatabasePath, "McpDocServer:DatabasePath", failures);
         ValidateLimits(options.Indexing, failures);
         ValidateRetrieval(options.Retrieval, failures);
@@ -25,6 +26,37 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
         return failures.Count == 0
             ? ValidateOptionsResult.Success
             : ValidateOptionsResult.Fail(failures);
+    }
+
+    private static void ValidateTransport(
+        McpDocServerOptions options,
+        List<string> failures)
+    {
+        if (options.Transport is not ("stdio" or "http"))
+        {
+            failures.Add("McpDocServer:Transport must be 'stdio' or 'http'.");
+        }
+
+        if (!Uri.TryCreate(options.Http.Url, UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttp
+            || !uri.IsLoopback
+            || uri.AbsolutePath != "/"
+            || !string.IsNullOrEmpty(uri.Query)
+            || !string.IsNullOrEmpty(uri.Fragment)
+            || !string.IsNullOrEmpty(uri.UserInfo))
+        {
+            failures.Add(
+                "McpDocServer:Http:Url must be an absolute HTTP loopback URL without a path, query, fragment, or credentials.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.Http.Path)
+            || !options.Http.Path.StartsWith("/", StringComparison.Ordinal)
+            || options.Http.Path.Contains("?", StringComparison.Ordinal)
+            || options.Http.Path.Contains("#", StringComparison.Ordinal))
+        {
+            failures.Add(
+                "McpDocServer:Http:Path must start with '/' and must not contain a query or fragment.");
+        }
     }
 
     private static void ValidateRetrieval(RetrievalOptions options, List<string> failures)

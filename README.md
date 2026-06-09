@@ -48,18 +48,40 @@ Example MCP client configuration:
 
 For a client launched outside the repository, use an absolute project path.
 
-## Test with MCP Inspector
+## Run over Streamable HTTP
 
-From the host project directory:
+Start the same host in local HTTP mode:
 
 ```powershell
-Set-Location .\src\McpDocServer.Host
-npx -y @modelcontextprotocol/inspector dotnet run --project .\McpDocServer.Host.csproj
+dotnet run --project .\src\McpDocServer.Host\McpDocServer.Host.csproj `
+  -- --McpDocServer:Transport=http
 ```
 
-The Inspector launches the server as a child process. Launching from the host
-project directory ensures its `appsettings.json` is loaded. Configure an
-absolute `DatabasePath` when the index should live outside that directory.
+Connect a Streamable HTTP MCP client to:
+
+```text
+http://127.0.0.1:5034/mcp
+```
+
+HTTP mode is stateless and intentionally unauthenticated for local development.
+Configuration validation restricts it to a loopback HTTP URL. Shared-network
+binding, TLS, authentication, authorization, and CORS remain Stage 5 work.
+
+## Test with MCP Inspector
+
+For stdio, launch Inspector from the repository root:
+
+```powershell
+npx -y @modelcontextprotocol/inspector dotnet run --project .\src\McpDocServer.Host\McpDocServer.Host.csproj
+```
+
+The host loads `appsettings.json` from its executable directory, independent of
+the caller's working directory. Configure an absolute `DatabasePath` when the
+index should live outside the repository.
+
+To inspect HTTP mode, start the server separately with the HTTP command above,
+select **Streamable HTTP** in Inspector, and connect to
+`http://127.0.0.1:5034/mcp`.
 
 After connecting:
 
@@ -100,6 +122,11 @@ The root section is `McpDocServer`:
 ```json
 {
   "McpDocServer": {
+    "Transport": "stdio",
+    "Http": {
+      "Url": "http://127.0.0.1:5034",
+      "Path": "/mcp"
+    },
     "DatabasePath": "data/docs.db",
     "RecommendedVersions": {},
     "NuGetSources": [],
