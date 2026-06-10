@@ -36,15 +36,15 @@ src/
   McpDocServer.Host/
   McpDocServer.Configuration/
   McpDocServer.Application/
-  McpDocServer.Indexing/
+  McpDocServer.Indexer/
   McpDocServer.Infrastructure/
-  McpDocServer.Indexing.Worker/
 tests/
   McpDocServer.UnitTests/
   McpDocServer.IntegrationTests/
 ```
 
-Application and Indexing code must not depend on Host or Infrastructure.
+Application, Configuration, and Indexer must not have project references.
+Infrastructure depends only on Application.
 
 ### FR-2: MCP hosting
 
@@ -75,7 +75,7 @@ Define and validate:
 - NuGet sources.
 - Repository sources.
 - Recommended package versions.
-- Indexing limits and refresh settings.
+- Indexing safety and processing limits.
 
 Invalid required configuration must fail startup with a useful error.
 

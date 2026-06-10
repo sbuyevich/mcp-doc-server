@@ -16,10 +16,9 @@ search index.
   error.
 - Use explicit tool registration so the public MCP surface is reviewed.
 - Use `System.Text.Json` contracts with stable property names.
-- Keep Configuration, Application, and Indexing free of project references.
-  Infrastructure depends on Application and Indexing; the Host depends on
-  Application, Configuration, and Infrastructure; the Worker depends on
-  Configuration, Indexing, and Infrastructure.
+- Keep Configuration, Application, and Indexer free of project references.
+  Infrastructure depends only on Application; the Host depends on Application,
+  Configuration, and Infrastructure.
 
 ## Project Structure
 
@@ -27,10 +26,9 @@ search index.
 src/
   McpDocServer.Configuration/
   McpDocServer.Application/
-  McpDocServer.Indexing/
+  McpDocServer.Indexer/
   McpDocServer.Infrastructure/
   McpDocServer.Host/
-  McpDocServer.Indexing.Worker/
 tests/
   McpDocServer.UnitTests/
   McpDocServer.IntegrationTests/

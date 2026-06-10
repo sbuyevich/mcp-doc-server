@@ -9,24 +9,19 @@
 ## Run Indexing
 
 Configure the packages to index in
-`src/McpDocServer.Indexing.Worker/appsettings.json`. The Worker and Host must
+`src/McpDocServer.Indexer/appsettings.json`. The Indexer and Host must
 use the same `McpDocServer:DatabasePath`.
 
 From the repository root, run one indexing refresh:
 
 ```powershell
-dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj -- --once
+dotnet run --project .\src\McpDocServer.Indexer\McpDocServer.Indexer.csproj
 ```
 
 Exit code `0` means indexing succeeded or no sources were configured. Exit
 code `1` means the run failed or completed with partial success. Wait for the
-one-shot command to finish successfully before starting the Host.
-
-To keep refreshing the index continuously, omit `--once`:
-
-```powershell
-dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj
-```
+command to finish successfully before starting the Host. Use an external
+scheduler when recurring indexing is required.
 
 ## Run Inspector for Testing
 

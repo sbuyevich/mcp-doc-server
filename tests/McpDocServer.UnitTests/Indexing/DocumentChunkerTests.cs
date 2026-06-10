@@ -1,4 +1,4 @@
-using McpDocServer.Infrastructure.Indexing;
+using McpDocServer.Indexer.Processing;
 
 namespace McpDocServer.UnitTests.Indexing;
 

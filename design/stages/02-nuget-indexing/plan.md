@@ -8,15 +8,14 @@ This stage does not add natural-language retrieval or ranking. It should make th
 
 ## Key Decisions
 
-- Keep the feature and infrastructure boundaries:
-  - `McpDocServer.Indexing`: source-neutral records, value objects, use-case
-    ports, orchestration, and result models.
+- Keep retrieval layered and indexing vertical:
+  - `McpDocServer.Indexer`: one-shot console application containing
+    source-neutral records, ports, orchestration, NuGet processing, and SQLite
+    publication.
   - `McpDocServer.Application`: retrieval use cases and MCP contracts.
-  - `McpDocServer.Infrastructure`: NuGet client access, archive processing, symbol/doc extraction, and SQLite persistence.
-  - `McpDocServer.Configuration`: shared option contracts and validation.
+  - `McpDocServer.Infrastructure`: read-only SQLite retrieval.
+  - `McpDocServer.Configuration`: Host option contracts and validation.
   - `McpDocServer.Host`: retrieval-only MCP composition and diagnostics.
-  - `McpDocServer.Indexing.Worker`: indexing configuration, immediate and
-    scheduled execution, and one-shot operation.
 - Use official NuGet client APIs:
   - `NuGet.Protocol` for source repositories, package search, metadata lookup, and package downloads.
   - `NuGet.Packaging` for `.nupkg` / `.nuspec` archive inspection.
@@ -39,7 +38,8 @@ Add central package versions in `Directory.Packages.props`:
 - `Microsoft.Data.Sqlite`
 - `System.Reflection.MetadataLoadContext`
 
-Reference them from the infrastructure project only, unless a test project needs fixture helpers directly.
+Reference them from the Indexer project only, unless a test project needs
+fixture helpers directly.
 
 ## Configuration
 
@@ -57,7 +57,6 @@ Extend `NuGetSourceOptions`:
 
 Extend `IndexingOptions`:
 
-- `RefreshInterval`
 - `MaxPackageBytes`
 - `MaxArchiveEntries`
 - `MaxExtractedBytes`
@@ -100,7 +99,7 @@ Use normalized deterministic keys where practical:
 
 Avoid random identifiers for persisted package identity.
 
-## Application Ports
+## Indexer Ports
 
 Add application-level contracts:
 
@@ -108,7 +107,8 @@ Add application-level contracts:
   - Runs indexing for configured sources.
   - Returns an index run summary with counts, status, warnings, and errors.
 - `IIndexingSourceProvider`
-  - Converts Worker configuration into source-neutral indexing source definitions.
+  - Converts Indexer configuration into source-neutral indexing source
+    definitions.
 - `IPackageSourceClient`
   - Discovers package identities and selected versions.
   - Downloads package archives into bounded temp files/streams.
@@ -291,9 +291,9 @@ Failure rules:
 - A failed run must not corrupt or partially replace the last good database state.
 - A malformed package should create an `index_run_errors` row and allow remaining packages to continue.
 
-## Worker Integration
+## Indexer Integration
 
-Register infrastructure services in dependency injection:
+Register Indexer services in dependency injection:
 
 - NuGet source client
 - package processor
@@ -303,15 +303,14 @@ Register infrastructure services in dependency injection:
 - index coordinator
 - anonymous credential provider
 
-Add the dedicated indexing Worker:
+Add the dedicated indexing Indexer:
 
-- Runs immediately, then waits `Indexing.RefreshInterval` after each completed
-  run before repeating.
-- Keeps refreshes sequential within one process.
-- Supports `--once`, returning exit `0` for success or no configured sources
-  and exit `1` for failed, partial, or unhandled runs.
+- Runs all configured sources once per invocation.
+- Returns exit `0` for success or no configured sources and exit `1` for
+  failed, partial, invalid, canceled, or unhandled runs.
 - Skips quietly when no sources are configured.
 - Logs source/run summaries.
+- Uses an external scheduler when recurring indexing is required.
 
 Extend diagnostics/status:
 
@@ -387,7 +386,8 @@ dotnet test .\McpDocServer.slnx
 8. Implement metadata/document extraction and chunking.
 9. Implement metadata-only public symbol extraction.
 10. Implement index coordinator with staged atomic publish.
-11. Wire the dedicated Worker and split retrieval/indexing registrations.
+11. Wire the self-contained Indexer and retrieval-only Infrastructure
+    registration.
 12. Add fixture packages and unit/integration tests.
 13. Update README with local indexing/test instructions.
 14. Run build/test and fix compile or behavioral failures.
@@ -403,14 +403,14 @@ dotnet test .\McpDocServer.slnx
 - Re-indexing is incremental and does not duplicate records.
 - Failed package updates preserve previous successful data.
 - Local fixture tests prove indexing without internet access.
-- Worker one-shot and continuous modes index without involving the MCP Host.
+- The one-shot Indexer writes the index without involving the MCP Host.
 
 ## Risks
 
 - NuGet prefix search may not discover unlisted packages. Use explicit package ids for unlisted indexing.
 - Metadata-only symbol extraction can hit assembly resolution gaps. Treat unresolved dependencies as warnings and keep useful public metadata.
 - FTS5 availability depends on the SQLite native library. Add an integration test that creates the FTS virtual table early.
-- Multiple Worker processes can contend for one SQLite database. Deploy exactly
+- Multiple Indexer processes can contend for one SQLite database. Deploy exactly
   one writer until cross-process coordination is implemented.
 
 ## Definition Of Done

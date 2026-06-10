@@ -3,8 +3,7 @@
     <Project Path="src/McpDocServer.Application/McpDocServer.Application.csproj" />
     <Project Path="src/McpDocServer.Configuration/McpDocServer.Configuration.csproj" />
     <Project Path="src/McpDocServer.Host/McpDocServer.Host.csproj" />
-    <Project Path="src/McpDocServer.Indexing/McpDocServer.Indexing.csproj" />
-    <Project Path="src/McpDocServer.Indexing.Worker/McpDocServer.Indexing.Worker.csproj" />
+    <Project Path="src/McpDocServer.Indexer/McpDocServer.Indexer.csproj" />
     <Project Path="src/McpDocServer.Infrastructure/McpDocServer.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">

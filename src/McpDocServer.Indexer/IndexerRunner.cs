@@ -1,0 +1,64 @@
+using McpDocServer.Indexer.Configuration;
+using McpDocServer.Indexer.Models;
+using McpDocServer.Indexer.Services;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace McpDocServer.Indexer;
+
+internal sealed class IndexerRunner(
+    IOptions<IndexerOptions> options,
+    IIndexCoordinator indexCoordinator,
+    ILogger<IndexerRunner> logger)
+{
+    public async Task<bool> RunAsync(CancellationToken cancellationToken)
+    {
+        if (options.Value.NuGetSources.Count == 0)
+        {
+            logger.LogInformation("No NuGet sources are configured; indexing was skipped.");
+            return true;
+        }
+
+        try
+        {
+            var summaries = await indexCoordinator.IndexAllAsync(cancellationToken);
+            foreach (var summary in summaries)
+            {
+                LogSummary(summary);
+            }
+
+            return summaries.All(summary =>
+                summary.Status.Equals("succeeded", StringComparison.Ordinal));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "NuGet indexing failed.");
+            return false;
+        }
+    }
+
+    private void LogSummary(IndexRunSummary summary)
+    {
+        var logLevel = summary.Status switch
+        {
+            "succeeded" => LogLevel.Information,
+            "partial_success" => LogLevel.Warning,
+            _ => LogLevel.Error
+        };
+
+        logger.Log(
+            logLevel,
+            "NuGet index run completed. Source={SourceName}, Status={Status}, Discovered={Discovered}, Indexed={Indexed}, Changed={Changed}, Unchanged={Unchanged}, Errors={ErrorCount}",
+            summary.SourceName,
+            summary.Status,
+            summary.Discovered,
+            summary.Indexed,
+            summary.Changed,
+            summary.Unchanged,
+            summary.Errors.Count);
+    }
+}

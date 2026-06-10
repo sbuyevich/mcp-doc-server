@@ -4,8 +4,8 @@ using McpDocServer.Application.Contracts.QueryDocs;
 using McpDocServer.Application.Contracts.ResolveLibrary;
 using McpDocServer.Application.Retrieval.Services;
 using McpDocServer.Host;
-using McpDocServer.Indexing.Services;
-using McpDocServer.Indexing.Worker;
+using McpDocServer.Indexer.Services;
+using McpDocServer.Indexer;
 using McpDocServer.IntegrationTests.Indexing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -175,7 +175,7 @@ public sealed class EnvironmentAwareRetrievalTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddMcpDocServerCore(configuration);
-        services.AddIndexingWorkerCore(configuration);
+        services.AddIndexer(configuration);
         return services.BuildServiceProvider(validateScopes: true);
     }
 

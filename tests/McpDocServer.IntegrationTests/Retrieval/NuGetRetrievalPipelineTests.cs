@@ -6,8 +6,8 @@ using McpDocServer.Application.Contracts.QueryDocs;
 using McpDocServer.Application.Contracts.ResolveLibrary;
 using McpDocServer.Application.Retrieval.Services;
 using McpDocServer.Host;
-using McpDocServer.Indexing.Services;
-using McpDocServer.Indexing.Worker;
+using McpDocServer.Indexer.Services;
+using McpDocServer.Indexer;
 using McpDocServer.IntegrationTests.Indexing;
 using McpDocServer.IntegrationTests.Mcp;
 using Microsoft.Extensions.Configuration;
@@ -87,7 +87,7 @@ public sealed class NuGetRetrievalPipelineTests
                 .HandleAsync(
                     new GetSymbolRequest(
                         $"nuget:{FixtureNuGetPackage.PackageId}",
-                        "McpDocServer.Indexing.Models.PackageIndexData",
+                        "McpDocServer.Indexer.Models.PackageIndexData",
                         Version: "1.2.3"),
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, symbol.Status);
@@ -191,7 +191,7 @@ public sealed class NuGetRetrievalPipelineTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddMcpDocServerCore(configuration);
-        services.AddIndexingWorkerCore(configuration);
+        services.AddIndexer(configuration);
         return services.BuildServiceProvider(validateScopes: true);
     }
 }

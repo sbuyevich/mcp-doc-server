@@ -2,11 +2,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
-    <PackageReference Include="NuGet.Packaging" />
-    <PackageReference Include="NuGet.Protocol" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\McpDocServer.Application\McpDocServer.Application.csproj" />
-    <ProjectReference Include="..\McpDocServer.Indexing\McpDocServer.Indexing.csproj" />
   </ItemGroup>
 </Project>

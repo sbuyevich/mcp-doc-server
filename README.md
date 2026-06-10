@@ -20,23 +20,19 @@ dotnet build .\McpDocServer.slnx --no-restore
 dotnet test .\McpDocServer.slnx --no-build --no-restore
 ```
 
-## Run the indexing worker
+## Run the Indexer
 
-The Worker is the only process that writes the index. Run it continuously:
-
-```powershell
-dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj
-```
-
-It indexes immediately, then waits for `Indexing:RefreshInterval` after each
-completed run before starting the next one. To perform one refresh and exit:
+The Indexer is the only process that writes the index. Each invocation indexes
+all configured sources once and exits:
 
 ```powershell
-dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj -- --once
+dotnet run --project .\src\McpDocServer.Indexer\McpDocServer.Indexer.csproj
 ```
 
-One-shot execution exits `0` after a successful run or when no sources are
-configured. It exits `1` after a failed or partially successful run.
+It exits `0` after a successful run or when no sources are configured. It exits
+`1` after a failed, partially successful, invalid, or canceled run. Use an
+external scheduler for recurring indexing, and run only one Indexer process
+against a SQLite database at a time.
 
 ## Run over stdio
 
@@ -134,7 +130,7 @@ NuGet feed.
 
 ## Configuration
 
-The Host and Worker have separate `appsettings.json` files. Both use the
+The Host and Indexer have separate `appsettings.json` files. Both use the
 `McpDocServer` root section and standard .NET environment-variable and
 command-line overrides.
 
@@ -167,7 +163,7 @@ Host configuration:
 }
 ```
 
-Worker configuration:
+Indexer configuration:
 
 ```json
 {
@@ -188,7 +184,6 @@ Worker configuration:
     ],
     "RepositorySources": [],
     "Indexing": {
-      "RefreshInterval": "01:00:00",
       "MaxPackageBytes": 104857600,
       "MaxDocumentBytes": 20971520,
       "MaxArchiveEntries": 10000,
@@ -203,7 +198,7 @@ Worker configuration:
 
 ### Configuration loading and overrides
 
-The Host and Worker load their own `appsettings.json` from the executable
+The Host and Indexer load their own `appsettings.json` from the executable
 directory. This makes JSON configuration independent of the directory from
 which the executable was launched.
 
@@ -223,12 +218,12 @@ dotnet run --project .\src\McpDocServer.Host\McpDocServer.Host.csproj `
 ```
 
 Environment variables and command-line arguments override JSON values.
-Collection entries use a zero-based index. `TimeSpan` values use
-`hh:mm:ss`, so `01:00:00` means one hour and `00:02:00` means two minutes.
-Invalid values fail startup rather than silently falling back.
+Collection entries use a zero-based index. `TimeSpan` values use `hh:mm:ss`,
+so `00:02:00` means two minutes. Invalid values fail startup rather than
+silently falling back.
 
-Configuration is read when the process starts. Restart the Host or Worker
-after changing its `appsettings.json`.
+Configuration is read when the process starts. Restart the Host or rerun the
+Indexer after changing its `appsettings.json`.
 
 ### Host values
 
@@ -237,7 +232,7 @@ after changing its `appsettings.json`.
 | `Transport` | Selects one MCP transport for the process. Allowed lowercase values are `stdio` and `http`. The default is `stdio`. |
 | `Http:Url` | Base address used in HTTP mode. It must be an absolute `http://` loopback URL such as `http://127.0.0.1:5034`, with no path, query, fragment, or credentials. It is validated even when `Transport` is `stdio`. |
 | `Http:Path` | Streamable HTTP endpoint path mapped under `Http:Url`. It must start with `/` and cannot contain a query or fragment. The default is `/mcp`. |
-| `DatabasePath` | SQLite index opened read-only by the Host. It must point to the same database written by the Worker. Relative paths are resolved from the process working directory, so an absolute path is recommended. |
+| `DatabasePath` | SQLite index opened read-only by the Host. It must point to the same database written by the Indexer. Relative paths are resolved from the process working directory, so an absolute path is recommended. |
 | `RecommendedVersions` | Optional package-to-version map. Use `Company.Package` for a package-wide recommendation or `nuget:qa/Company.Package` for an environment-specific recommendation. Keys are case-insensitive and values must be semantic versions such as `2.8.1` or `2.9.0-beta.1`. |
 | `Retrieval:EnvironmentOrder` | Case-insensitive precedence for legacy IDs such as `nuget:Company.Package`. Each value must be a slug containing only letters, numbers, `.`, `_`, or `-`. Environments not listed here sort after listed environments by ordinal name. |
 | `Retrieval:SourceOrder` | Case-insensitive feed precedence within an environment. Source names not listed here sort after listed sources by ordinal name. Empty and duplicate values are rejected. |
@@ -248,14 +243,14 @@ after changing its `appsettings.json`.
 | `Retrieval:MinimumEvidenceScore` | Lowest accepted `query_docs` relevance score, from `0` through `1`. Higher values return less, stronger evidence; lower values accept weaker matches. |
 | `Retrieval:AmbiguousSymbolLimit` | Maximum number of symbol candidates returned when `get_symbol` cannot select one unambiguous symbol. It must be positive. |
 
-### Worker root values
+### Indexer root values
 
 | Setting | Meaning and rules |
 | --- | --- |
-| `DatabasePath` | SQLite index created and updated by the Worker. Use exactly the same path as the Host. Relative paths are resolved from the process working directory. |
-| `NuGetSources` | NuGet feeds or local package folders to index. The collection may be empty; a one-shot run then succeeds without doing work. |
-| `RepositorySources` | Reserved configuration for planned repository indexing. Entries are validated, but the current Worker indexes only `NuGetSources`; leave this as `[]`. |
-| `Indexing` | Scheduling, download, archive-safety, and document-processing limits described below. |
+| `DatabasePath` | SQLite index created and updated by the Indexer. Use exactly the same path as the Host. Relative paths are resolved from the process working directory. |
+| `NuGetSources` | NuGet feeds or local package folders to index. The collection may be empty; the Indexer then succeeds without doing work. |
+| `RepositorySources` | Reserved configuration for planned repository indexing. Entries are validated, but the current Indexer indexes only `NuGetSources`; leave this as `[]`. |
+| `Indexing` | Download, archive-safety, and document-processing limits described below. |
 
 ### NuGet source values
 
@@ -263,12 +258,12 @@ after changing its `appsettings.json`.
 | --- | --- |
 | `Name` | Stable, human-readable feed identity such as `nuget.org` or `internal-qa`. It appears in citations and `SourceId`. Names must be non-empty and unique, case-insensitively, across NuGet and repository sources. |
 | `Environment` | Selection label such as `production`, `qa`, or `public`. It is required, compared case-insensitively, and may contain only letters, numbers, `.`, `_`, or `-`. Multiple feeds may share an environment. |
-| `ServiceIndex` | Absolute HTTP/HTTPS NuGet v3 service-index URL, or a local package-folder path. Relative local paths are resolved from the Worker working directory; use an absolute path for predictable deployments. |
+| `ServiceIndex` | Absolute HTTP/HTTPS NuGet v3 service-index URL, or a local package-folder path. Relative local paths are resolved from the Indexer working directory; use an absolute path for predictable deployments. |
 | `PackageIds` | Explicit package IDs to index. Use this for a known package, especially an unlisted package that search cannot discover. Empty strings are invalid. |
 | `PackagePrefixes` | NuGet search terms used to discover package IDs, followed by a case-insensitive `StartsWith` check. For example, `Company.` discovers matching listed packages. Search normally cannot discover new unlisted packages. |
 | `IncludePrerelease` | When `true`, discovery and metadata selection may include prerelease versions. Retrieval still requires its request-level `IncludePrerelease` flag before selecting a prerelease by fallback or recommendation. |
 | `IncludeUnlisted` | When `true`, metadata selection may include unlisted versions. Prefer `PackageIds` because prefix search may not discover an unlisted package. |
-| `MaxVersionsPerPackage` | Maximum newest versions selected from each package during a refresh after prerelease and unlisted filters. It must be positive. There is no unlimited value; use a sufficiently large number when all available versions are required. Lowering it does not delete versions already indexed. |
+| `MaxVersionsPerPackage` | Maximum newest versions selected from each package during a run after prerelease and unlisted filters. It must be positive. There is no unlimited value; use a sufficiently large number when all available versions are required. Lowering it does not delete versions already indexed. |
 | `MaxPackages` | Maximum distinct package IDs processed for this source after combining explicit IDs and prefix discoveries. It must be positive. IDs are ordered case-insensitively before the cap is applied. |
 
 At least one non-empty `PackageIds` or `PackagePrefixes` entry is required for
@@ -279,13 +274,12 @@ each NuGet source.
 | Setting | Meaning and rules |
 | --- | --- |
 | `Name` | Unique source identity shared with the NuGet source namespace. |
-| `RootPath` | Valid local repository root path. This is validated but not indexed by the current Worker. |
+| `RootPath` | Valid local repository root path. This is validated but not indexed by the current Indexer. |
 
 ### Indexing values
 
 | Setting | Meaning and rules |
 | --- | --- |
-| `RefreshInterval` | Delay after one continuous Worker run completes before the next run starts. Runs are sequential and never overlap within one Worker process. `--once` ignores this delay. |
 | `MaxPackageBytes` | Maximum downloaded `.nupkg` size in bytes. A package exceeding the limit fails before indexing. |
 | `MaxDocumentBytes` | Maximum uncompressed size of each README, text, or XML documentation entry read from a package. |
 | `MaxArchiveEntries` | Maximum number of ZIP entries allowed in one `.nupkg`. |
@@ -294,7 +288,7 @@ each NuGet source.
 | `MaxDocumentChars` | Maximum character count of each searchable documentation chunk. Larger documents are split near a natural text boundary. |
 | `PackageDownloadTimeout` | Per-package timeout covering package download, flush, and content hashing. |
 
-All indexing limits and intervals must be positive.
+All indexing limits and timeouts must be positive.
 
 ### Environment and version selection
 
@@ -320,7 +314,7 @@ Version selection uses this precedence:
 5. Latest indexed, listed stable version.
 6. Latest indexed, listed prerelease when the request allows prereleases.
 
-The Worker must first index a version before the Host can select it.
+The Indexer must first index a version before the Host can select it.
 
 ### Paths, upgrades, and credentials
 
@@ -329,7 +323,7 @@ JSON file is loaded from the executable directory, relative database and local
 source paths are resolved from the process working directory. If relative
 paths are used, launch both processes from the same directory.
 
-After upgrading an existing database, run the Worker before the Host so it can
+After upgrading an existing database, run the Indexer before the Host so it can
 apply the current schema migration.
 
 On a successful run, the database contains package versions, artifacts,

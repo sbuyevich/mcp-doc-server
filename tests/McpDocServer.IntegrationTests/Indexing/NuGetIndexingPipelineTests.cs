@@ -1,6 +1,6 @@
-using McpDocServer.Indexing.Services;
-using McpDocServer.Indexing.Worker;
-using McpDocServer.Infrastructure.Persistence;
+using McpDocServer.Indexer.Services;
+using McpDocServer.Indexer;
+using McpDocServer.Indexer.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,6 +49,7 @@ public sealed class NuGetIndexingPipelineTests
             Assert.Equal(0, second.Changed);
             Assert.Equal(1, second.Unchanged);
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
+            Assert.Equal(2L, await ScalarAsync(connection, "SELECT COUNT(*) FROM index_runs;"));
 
             FixtureNuGetPackage.ReplaceWithUnsafeArchive(feed);
             var failed = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
@@ -195,7 +196,7 @@ public sealed class NuGetIndexingPipelineTests
 
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddIndexingWorkerCore(configuration);
+        services.AddIndexer(configuration);
         return services.BuildServiceProvider(validateScopes: true);
     }
 

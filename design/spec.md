@@ -188,18 +188,15 @@ successful index.
 
 ## 12. Architecture
 
-- `Configuration`: shared Host and Worker option contracts and validation.
-- `Indexing`: package indexing records, abstractions, orchestration, and stable
-  value types.
+- `Configuration`: Host option contracts and validation.
+- `Indexer`: one-shot console application containing indexing configuration,
+  records, orchestration, NuGet processing, and SQLite publication.
 - `Application`: retrieval handlers, MCP contracts, and policies.
-- `Infrastructure`: NuGet access, archive processing, metadata extraction,
-  SQLite, and FTS5.
+- `Infrastructure`: SQLite and FTS5 retrieval implementations.
 - `Host`: retrieval-only MCP transports, diagnostics, tools, and resources.
-- `Indexing.Worker`: sole index writer, immediate and scheduled refreshes, and
-  one-shot execution.
 
-Configuration, Indexing, and Application have no project references. Host does
-not register indexing services or contact package sources.
+Configuration, Indexer, and Application have no project references. Host does
+not register Indexer services or contact package sources.
 
 ## 13. Configuration
 
@@ -221,7 +218,7 @@ Host:
 }
 ```
 
-Worker:
+Indexer:
 
 ```json
 {
@@ -242,7 +239,8 @@ Worker:
     ],
     "RepositorySources": [],
     "Indexing": {
-      "RefreshInterval": "01:00:00"
+      "MaxPackageBytes": 104857600,
+      "PackageDownloadTimeout": "00:02:00"
     }
   }
 }
@@ -267,7 +265,7 @@ validation, diagnostics, and test projects.
 ### Stage 2: NuGet indexing
 
 Build safe package ingestion, metadata and documentation extraction, symbol
-inspection, SQLite persistence, FTS5 indexing, and a dedicated Worker process.
+inspection, SQLite persistence, FTS5 indexing, and a dedicated Indexer process.
 
 ### Stage 3: NuGet retrieval
 

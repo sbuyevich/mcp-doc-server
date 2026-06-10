@@ -5,9 +5,9 @@ namespace McpDocServer.UnitTests.Architecture;
 public sealed class ProjectDependencyTests
 {
     [Fact]
-    public void IndexingHasNoProjectReferences()
+    public void IndexerHasNoProjectReferences()
     {
-        var document = LoadProject("McpDocServer.Indexing");
+        var document = LoadProject("McpDocServer.Indexer");
 
         Assert.Empty(ProjectReferences(document));
     }
@@ -29,12 +29,11 @@ public sealed class ProjectDependencyTests
     }
 
     [Fact]
-    public void InfrastructureReferencesApplicationAndIndexing()
+    public void InfrastructureReferencesOnlyApplication()
     {
         AssertProjectReferences(
             "McpDocServer.Infrastructure",
-            "McpDocServer.Application",
-            "McpDocServer.Indexing");
+            "McpDocServer.Application");
     }
 
     [Fact]
@@ -48,13 +47,16 @@ public sealed class ProjectDependencyTests
     }
 
     [Fact]
-    public void WorkerReferencesConfigurationIndexingAndInfrastructure()
+    public void OldIndexingProjectsAreAbsent()
     {
-        AssertProjectReferences(
-            "McpDocServer.Indexing.Worker",
-            "McpDocServer.Configuration",
+        Assert.False(File.Exists(ProjectPath(
+            "src",
             "McpDocServer.Indexing",
-            "McpDocServer.Infrastructure");
+            "McpDocServer.Indexing.csproj")));
+        Assert.False(File.Exists(ProjectPath(
+            "src",
+            "McpDocServer.Indexing.Worker",
+            "McpDocServer.Indexing.Worker.csproj")));
     }
 
     private static void AssertProjectReferences(

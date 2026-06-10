@@ -1,5 +1,5 @@
 using McpDocServer.Host;
-using McpDocServer.Indexing.Services;
+using McpDocServer.Indexer.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

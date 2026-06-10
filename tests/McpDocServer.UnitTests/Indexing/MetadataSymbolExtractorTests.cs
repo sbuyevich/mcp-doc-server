@@ -1,4 +1,4 @@
-using McpDocServer.Infrastructure.NuGet;
+using McpDocServer.Indexer.NuGet;
 using NuGet.Versioning;
 
 namespace McpDocServer.UnitTests.Indexing;

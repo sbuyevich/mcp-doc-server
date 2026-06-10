@@ -1,5 +1,5 @@
 using McpDocServer.Host;
-using McpDocServer.Indexing.Worker;
+using McpDocServer.Indexer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,7 +38,7 @@ public sealed class InvalidConfigurationTests
     }
 
     [Fact]
-    public async Task InvalidWorkerConfigurationFailsStartup()
+    public async Task InvalidIndexerConfigurationFailsStartup()
     {
         var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(
             new HostApplicationBuilderSettings
@@ -51,16 +51,16 @@ public sealed class InvalidConfigurationTests
             new Dictionary<string, string?>
             {
                 ["McpDocServer:DatabasePath"] = "data/docs.db",
-                ["McpDocServer:Indexing:RefreshInterval"] = "00:00:00"
+                ["McpDocServer:Indexing:MaxPackageBytes"] = "0"
             });
         builder.Logging.ClearProviders();
-        builder.Services.AddIndexingWorkerCore(builder.Configuration);
+        builder.Services.AddIndexer(builder.Configuration);
 
         using var host = builder.Build();
 
         var exception = await Assert.ThrowsAsync<OptionsValidationException>(() =>
             host.StartAsync(CancellationToken.None));
 
-        Assert.Contains("RefreshInterval", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("MaxPackageBytes", exception.Message, StringComparison.Ordinal);
     }
 }

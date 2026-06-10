@@ -8,11 +8,11 @@ Persist an environment separately from the NuGet source and expose environment-q
 
 ### Configuration and persistence
 
-- Add required `Environment` to each Worker `NuGetSourceOptions`; validate it as a case-insensitive slug using letters, numbers, `.`, `_`, and `-`.
+- Add required `Environment` to each Indexer `NuGetSourceOptions`; validate it as a case-insensitive slug using letters, numbers, `.`, `_`, and `-`.
 - Allow multiple sources to share an environment.
 - Add `Retrieval.EnvironmentOrder`; retain `SourceOrder` for feed precedence within an environment.
 - Add schema migration v3 with `sources.environment`.
-- Populate migrated rows with their source name, then update them from Worker configuration during indexing.
+- Populate migrated rows with their source name, then update them from Indexer configuration during indexing.
 - Preserve existing source, library, version IDs, and `nuget://` citation URIs.
 
 ### MCP contracts and identifiers
@@ -51,13 +51,13 @@ Persist an environment separately from the NuGet source and expose environment-q
   - exact versions and environment-specific recommendations work;
   - responses report environment and concrete source.
 - Test multiple feeds in one environment and source tie-breaking.
-- Update serialization, MCP schema, stdio, HTTP, Worker, architecture, and documentation tests.
+- Update serialization, MCP schema, stdio, HTTP, Indexer, architecture, and documentation tests.
 - Run the complete build, test suite, and stale-contract searches.
 
 ## Assumptions
 
 - Environment is selection metadata, not an authorization boundary.
 - Source name remains the concrete feed identity used by citations.
-- Worker configuration must explicitly declare every source environment.
-- Deploy and run the upgraded Worker before starting the upgraded Host so schema v3 exists.
+- Indexer configuration must explicitly declare every source environment.
+- Deploy and run the upgraded Indexer before starting the upgraded Host so schema v3 exists.
 - Renaming an environment intentionally changes its public qualified library IDs.
