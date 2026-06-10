@@ -99,7 +99,7 @@ index should live outside the repository.
 
 To inspect HTTP mode, start the server separately with the HTTP command above,
 select **Streamable HTTP** in Inspector, and connect to
-`http://127.0.0.1:5034/mcp`.
+`http://127.0.0.1:2222/mcp`.
 
 After connecting:
 
@@ -145,7 +145,7 @@ Host configuration:
   "McpDocServer": {
     "Transport": "stdio",
     "Http": {
-      "Url": "http://127.0.0.1:5034",
+      "Url": "http://127.0.0.1:2222",
       "Path": "/mcp"
     },
     "DatabasePath": "data/docs.db",
@@ -179,7 +179,11 @@ Worker configuration:
         "Environment": "production",
         "ServiceIndex": "https://packages.example/v3/index.json",
         "PackageIds": [ "Company.Foundation" ],
-        "PackagePrefixes": []
+        "PackagePrefixes": [],
+        "IncludePrerelease": false,
+        "IncludeUnlisted": false,
+        "MaxVersionsPerPackage": 3,
+        "MaxPackages": 100
       }
     ],
     "RepositorySources": [],
@@ -197,58 +201,136 @@ Worker configuration:
 }
 ```
 
-Environment variables use double underscores:
+### Configuration loading and overrides
+
+The Host and Worker load their own `appsettings.json` from the executable
+directory. This makes JSON configuration independent of the directory from
+which the executable was launched.
+
+Environment variables use double underscores between configuration segments:
 
 ```powershell
 $env:McpDocServer__DatabasePath = "C:\mcp-doc-server\data\docs.db"
+$env:McpDocServer__Retrieval__EnvironmentOrder__0 = "production"
 ```
 
-Source collections may be empty. The Host validates transport and retrieval
-settings independently from the Worker, which validates source definitions and
-indexing limits. The Host never contacts NuGet sources.
+Command-line arguments use colon-separated paths:
 
-`Retrieval:EnvironmentOrder` controls environment precedence for legacy
-`nuget:{packageId}` identifiers. `Retrieval:SourceOrder` controls feed
-precedence within an environment. Values absent from either list sort after
-configured values by ordinal name.
+```powershell
+dotnet run --project .\src\McpDocServer.Host\McpDocServer.Host.csproj `
+  -- --McpDocServer:Transport=http `
+     --McpDocServer:Http:Url=http://127.0.0.1:5034
+```
 
-Discovery returns one qualified match per environment:
+Environment variables and command-line arguments override JSON values.
+Collection entries use a zero-based index. `TimeSpan` values use
+`hh:mm:ss`, so `01:00:00` means one hour and `00:02:00` means two minutes.
+Invalid values fail startup rather than silently falling back.
+
+Configuration is read when the process starts. Restart the Host or Worker
+after changing its `appsettings.json`.
+
+### Host values
+
+| Setting | Meaning and rules |
+| --- | --- |
+| `Transport` | Selects one MCP transport for the process. Allowed lowercase values are `stdio` and `http`. The default is `stdio`. |
+| `Http:Url` | Base address used in HTTP mode. It must be an absolute `http://` loopback URL such as `http://127.0.0.1:5034`, with no path, query, fragment, or credentials. It is validated even when `Transport` is `stdio`. |
+| `Http:Path` | Streamable HTTP endpoint path mapped under `Http:Url`. It must start with `/` and cannot contain a query or fragment. The default is `/mcp`. |
+| `DatabasePath` | SQLite index opened read-only by the Host. It must point to the same database written by the Worker. Relative paths are resolved from the process working directory, so an absolute path is recommended. |
+| `RecommendedVersions` | Optional package-to-version map. Use `Company.Package` for a package-wide recommendation or `nuget:qa/Company.Package` for an environment-specific recommendation. Keys are case-insensitive and values must be semantic versions such as `2.8.1` or `2.9.0-beta.1`. |
+| `Retrieval:EnvironmentOrder` | Case-insensitive precedence for legacy IDs such as `nuget:Company.Package`. Each value must be a slug containing only letters, numbers, `.`, `_`, or `-`. Environments not listed here sort after listed environments by ordinal name. |
+| `Retrieval:SourceOrder` | Case-insensitive feed precedence within an environment. Source names not listed here sort after listed sources by ordinal name. Empty and duplicate values are rejected. |
+| `Retrieval:DefaultMaxResults` | Configured default result count. It must be positive and no greater than `MaxResults`. The current `query_docs` wire contract independently defaults `MaxResults` to `8`, so keep these values aligned. |
+| `Retrieval:MaxResults` | Hard upper bound for requested result counts. It caps `query_docs` evidence and `resolve_library` matches. It must be positive and at least `DefaultMaxResults`. |
+| `Retrieval:MaxResponseBytes` | Maximum combined UTF-8 byte count of evidence text selected for a `query_docs` response. It does not include the surrounding JSON, metadata, or citations. Extra evidence is omitted with a truncation warning. |
+| `Retrieval:QueryTimeout` | Maximum duration of each retrieval operation, including SQLite queries. A timeout returns a structured tool error instead of waiting indefinitely. |
+| `Retrieval:MinimumEvidenceScore` | Lowest accepted `query_docs` relevance score, from `0` through `1`. Higher values return less, stronger evidence; lower values accept weaker matches. |
+| `Retrieval:AmbiguousSymbolLimit` | Maximum number of symbol candidates returned when `get_symbol` cannot select one unambiguous symbol. It must be positive. |
+
+### Worker root values
+
+| Setting | Meaning and rules |
+| --- | --- |
+| `DatabasePath` | SQLite index created and updated by the Worker. Use exactly the same path as the Host. Relative paths are resolved from the process working directory. |
+| `NuGetSources` | NuGet feeds or local package folders to index. The collection may be empty; a one-shot run then succeeds without doing work. |
+| `RepositorySources` | Reserved configuration for planned repository indexing. Entries are validated, but the current Worker indexes only `NuGetSources`; leave this as `[]`. |
+| `Indexing` | Scheduling, download, archive-safety, and document-processing limits described below. |
+
+### NuGet source values
+
+| Setting | Meaning and rules |
+| --- | --- |
+| `Name` | Stable, human-readable feed identity such as `nuget.org` or `internal-qa`. It appears in citations and `SourceId`. Names must be non-empty and unique, case-insensitively, across NuGet and repository sources. |
+| `Environment` | Selection label such as `production`, `qa`, or `public`. It is required, compared case-insensitively, and may contain only letters, numbers, `.`, `_`, or `-`. Multiple feeds may share an environment. |
+| `ServiceIndex` | Absolute HTTP/HTTPS NuGet v3 service-index URL, or a local package-folder path. Relative local paths are resolved from the Worker working directory; use an absolute path for predictable deployments. |
+| `PackageIds` | Explicit package IDs to index. Use this for a known package, especially an unlisted package that search cannot discover. Empty strings are invalid. |
+| `PackagePrefixes` | NuGet search terms used to discover package IDs, followed by a case-insensitive `StartsWith` check. For example, `Company.` discovers matching listed packages. Search normally cannot discover new unlisted packages. |
+| `IncludePrerelease` | When `true`, discovery and metadata selection may include prerelease versions. Retrieval still requires its request-level `IncludePrerelease` flag before selecting a prerelease by fallback or recommendation. |
+| `IncludeUnlisted` | When `true`, metadata selection may include unlisted versions. Prefer `PackageIds` because prefix search may not discover an unlisted package. |
+| `MaxVersionsPerPackage` | Maximum newest versions selected from each package during a refresh after prerelease and unlisted filters. It must be positive. There is no unlimited value; use a sufficiently large number when all available versions are required. Lowering it does not delete versions already indexed. |
+| `MaxPackages` | Maximum distinct package IDs processed for this source after combining explicit IDs and prefix discoveries. It must be positive. IDs are ordered case-insensitively before the cap is applied. |
+
+At least one non-empty `PackageIds` or `PackagePrefixes` entry is required for
+each NuGet source.
+
+### Repository source values
+
+| Setting | Meaning and rules |
+| --- | --- |
+| `Name` | Unique source identity shared with the NuGet source namespace. |
+| `RootPath` | Valid local repository root path. This is validated but not indexed by the current Worker. |
+
+### Indexing values
+
+| Setting | Meaning and rules |
+| --- | --- |
+| `RefreshInterval` | Delay after one continuous Worker run completes before the next run starts. Runs are sequential and never overlap within one Worker process. `--once` ignores this delay. |
+| `MaxPackageBytes` | Maximum downloaded `.nupkg` size in bytes. A package exceeding the limit fails before indexing. |
+| `MaxDocumentBytes` | Maximum uncompressed size of each README, text, or XML documentation entry read from a package. |
+| `MaxArchiveEntries` | Maximum number of ZIP entries allowed in one `.nupkg`. |
+| `MaxExtractedBytes` | Maximum total declared uncompressed size across the archive. It also limits each selected managed assembly read. |
+| `MaxCompressionRatio` | Maximum allowed uncompressed-to-compressed ratio for an archive entry. This protects against highly compressed archive bombs. |
+| `MaxDocumentChars` | Maximum character count of each searchable documentation chunk. Larger documents are split near a natural text boundary. |
+| `PackageDownloadTimeout` | Per-package timeout covering package download, flush, and content hashing. |
+
+All indexing limits and intervals must be positive.
+
+### Environment and version selection
+
+Discovery returns one qualified match per package and environment:
 
 ```text
 nuget:qa/Company.Foundation
 nuget:production/Company.Foundation
 ```
 
-Qualified IDs never fall back to another environment. Legacy IDs remain
-supported and use the configured precedence. Exact `Version` requests take
-precedence over recommended versions.
+A qualified ID searches only its named environment and never falls back to
+another one. A legacy ID such as `nuget:Company.Foundation` uses
+`EnvironmentOrder`, then `SourceOrder` when candidates are otherwise equally
+usable. Unlisted order values are still eligible; they sort after configured
+values.
 
-Give both processes the same `DatabasePath`; when it is relative, launch both
-from the same working directory. After upgrading an existing database, run the
-Worker before the Host so it applies schema migration v3.
+Version selection uses this precedence:
 
-Example NuGet source:
+1. Exact `Version` supplied by the tool request.
+2. Exact `ProjectVersion` supplied as project context.
+3. Environment-qualified `RecommendedVersions` entry.
+4. Package-wide `RecommendedVersions` entry.
+5. Latest indexed, listed stable version.
+6. Latest indexed, listed prerelease when the request allows prereleases.
 
-```json
-{
-  "Name": "internal",
-  "Environment": "production",
-  "ServiceIndex": "https://packages.example/v3/index.json",
-  "PackagePrefixes": [ "Company." ],
-  "PackageIds": [ "Company.Foundation" ],
-  "IncludePrerelease": false,
-  "IncludeUnlisted": false,
-  "MaxVersionsPerPackage": 3,
-  "MaxPackages": 100
-}
-```
+The Worker must first index a version before the Host can select it.
 
-`Environment` is required and must contain only letters, numbers, `.`, `_`, or
-`-`. Multiple sources may share the same environment.
+### Paths, upgrades, and credentials
 
-`ServiceIndex` may also be a local package-folder path, which is useful for
-offline fixtures. Prefix discovery normally cannot find new unlisted packages;
-use `PackageIds` when an unlisted package must be indexed.
+Give both processes the same preferably absolute `DatabasePath`. Although the
+JSON file is loaded from the executable directory, relative database and local
+source paths are resolved from the process working directory. If relative
+paths are used, launch both processes from the same directory.
+
+After upgrading an existing database, run the Worker before the Host so it can
+apply the current schema migration.
 
 On a successful run, the database contains package versions, artifacts,
 dependencies, target frameworks, public symbols, document chunks, FTS5 rows,
