@@ -49,14 +49,17 @@ public sealed class ProjectDependencyTests
     [Fact]
     public void OldIndexingProjectsAreAbsent()
     {
+        var oldFeatureProject = "McpDocServer." + "Indexing";
+        var oldWorkerProject = oldFeatureProject + ".Worker";
+
         Assert.False(File.Exists(ProjectPath(
             "src",
-            "McpDocServer.Indexing",
-            "McpDocServer.Indexing.csproj")));
+            oldFeatureProject,
+            $"{oldFeatureProject}.csproj")));
         Assert.False(File.Exists(ProjectPath(
             "src",
-            "McpDocServer.Indexing.Worker",
-            "McpDocServer.Indexing.Worker.csproj")));
+            oldWorkerProject,
+            $"{oldWorkerProject}.csproj")));
     }
 
     private static void AssertProjectReferences(

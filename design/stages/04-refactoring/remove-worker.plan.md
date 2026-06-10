@@ -128,7 +128,7 @@ dotnet test .\McpDocServer.slnx
 ## Assumptions
 
 - `Indexer` is the full project, assembly, and namespace identity.
-- Terms describing the operation, such as “indexing” and `IndexCoordinator`,
+- Terms describing the operation, such as "indexing" and `IndexCoordinator`,
   remain grammatically named; only the product/project identity becomes
   `Indexer`.
 - The existing `McpDocServer:Indexing` JSON section remains for processing

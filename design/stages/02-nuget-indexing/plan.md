@@ -101,7 +101,7 @@ Avoid random identifiers for persisted package identity.
 
 ## Indexer Ports
 
-Add application-level contracts:
+Add Indexer contracts:
 
 - `IIndexCoordinator`
   - Runs indexing for configured sources.
@@ -122,11 +122,12 @@ Add application-level contracts:
 - `IDocumentChunker`
 - `IContentHasher`
 
-Keep these interfaces source-neutral where possible. NuGet-specific details should live in infrastructure implementations or explicit NuGet DTOs.
+Keep these interfaces source-neutral where possible. NuGet-specific details
+should live in concrete Indexer implementations or explicit NuGet DTOs.
 
 ## NuGet Discovery
 
-Implement `NuGetPackageSourceClient` in infrastructure.
+Implement `NuGetPackageSourceClient` in the Indexer.
 
 Discovery behavior:
 
@@ -293,7 +294,7 @@ Failure rules:
 
 ## Indexer Integration
 
-Register Indexer services in dependency injection:
+Register Indexer services through `AddIndexer(IConfiguration)`:
 
 - NuGet source client
 - package processor
@@ -303,7 +304,7 @@ Register Indexer services in dependency injection:
 - index coordinator
 - anonymous credential provider
 
-Add the dedicated indexing Indexer:
+The Indexer process:
 
 - Runs all configured sources once per invocation.
 - Returns exit `0` for success or no configured sources and exit `1` for
@@ -377,9 +378,9 @@ dotnet test .\McpDocServer.slnx
 ## Work Packages
 
 1. Update packages and project references.
-2. Extend host configuration/options and validation.
-3. Add domain records and identity normalization helpers.
-4. Add application indexing ports and run result contracts.
+2. Add Indexer configuration/options and validation.
+3. Add Indexer records and identity normalization helpers.
+4. Add Indexer ports and run result contracts.
 5. Implement SQLite schema, migrations, and store primitives.
 6. Implement NuGet package discovery and version selection.
 7. Implement bounded package download and archive validation.

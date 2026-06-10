@@ -95,8 +95,8 @@ Host           -> Application + Configuration + Infrastructure
 Tests          -> projects required by each scenario
 ```
 
-Architecture tests enforce this graph and verify that the former
-`McpDocServer.Indexing` and `McpDocServer.Indexing.Worker` projects are absent.
+Architecture tests enforce this graph and verify that the former indexing
+projects are absent.
 
 ## Indexing Flow
 
