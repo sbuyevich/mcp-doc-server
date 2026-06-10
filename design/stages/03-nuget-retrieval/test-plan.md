@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Run commands from the repository root so relative paths resolve correctly.
-- Confirm `data/docs.db` exists and `NuGet.Versioning` has been indexed.
+- Confirm `data/docs.db` exists and `Formula.SimpleRepo` has been indexed.
 - Restart MCP Inspector after rebuilding or changing the server.
 
 Launch the Inspector:
@@ -27,7 +27,7 @@ Status values used below:
 | ID | Scenario | Status | Notes |
 |---|---|---|---|
 | MCP-01 | Connect and discover tools | PENDING | |
-| MCP-02 | Resolve an exact package ID | PASS | `NuGet.Versioning` resolved |
+| MCP-02 | Resolve an exact package ID | PASS | `Formula.SimpleRepo` resolved |
 | MCP-03 | Resolve a descriptive query | PENDING | |
 | MCP-04 | Accept a JSON-wrapped resolve query | PENDING | Regression test |
 | MCP-05 | List indexed versions | PENDING | |
@@ -64,7 +64,7 @@ Call `resolve_library`:
 
 ```json
 {
-  "query": "NuGet.Versioning",
+  "query": "Formula.SimpleRepo",
   "includePrerelease": false,
   "limit": 10,
   "environment": "public"
@@ -74,9 +74,9 @@ Call `resolve_library`:
 Expected:
 
 - `status` is `ok`.
-- A match has `libraryId` equal to `nuget:public/NuGet.Versioning`.
+- A match has `libraryId` equal to `nuget:public/Formula.SimpleRepo`.
 - `environment` is `public` and `sourceId` is `nuget.org`.
-- `displayName` is `NuGet.Versioning`.
+- `displayName` is `Formula.SimpleRepo`.
 - `recommendedVersion` is populated.
 - `confidence` is high for the exact ID match.
 
@@ -92,7 +92,7 @@ Call `resolve_library` with a concept rather than the package ID:
 }
 ```
 
-Expected: `NuGet.Versioning` is returned when indexed package metadata or
+Expected: `Formula.SimpleRepo` is returned when indexed package metadata or
 documentation contains matching terms.
 
 ### MCP-04: Accept a JSON-wrapped resolve query
@@ -100,7 +100,7 @@ documentation contains matching terms.
 In the `query` field, pass this entire value as a string:
 
 ```json
-{"query":"NuGet.Versioning","includePrerelease":false,"limit":10}
+{"query":"Formula.SimpleRepo","includePrerelease":false,"limit":10}
 ```
 
 Expected: the server unwraps the value and returns the same package match as
@@ -112,7 +112,7 @@ Call `list_versions`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
   "includePrerelease": false
 }
 ```
@@ -134,8 +134,8 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
-  "symbol": "NuGet.Versioning.NuGetVersion",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
+  "symbol": "Formula.SimpleRepo.NuGetVersion",
   "version": "<version>",
   "targetFramework": "net8.0",
   "includePrerelease": false
@@ -145,7 +145,7 @@ Call `get_symbol`:
 Expected:
 
 - `status` is `ok`.
-- The result identifies `NuGet.Versioning.NuGetVersion`.
+- The result identifies `Formula.SimpleRepo.NuGetVersion`.
 - `signature`, `documentation`, `assembly`, and target frameworks are present.
 - The citation uses a `nuget://` URI for the selected version.
 
@@ -155,7 +155,7 @@ Call `query_docs`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
   "question": "How do I parse a semantic version?",
   "version": "<version>",
   "targetFramework": "net8.0",
@@ -194,7 +194,7 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
   "symbol": "Definitely.Missing",
   "version": "<version>"
 }
@@ -250,7 +250,7 @@ produces explicit statuses rather than generated content.
 ## Prerequisites
 
 - Run commands from the repository root so relative paths resolve correctly.
-- Confirm `data/docs.db` exists and `NuGet.Versioning` has been indexed.
+- Confirm `data/docs.db` exists and `Formula.SimpleRepo` has been indexed.
 - Restart MCP Inspector after rebuilding or changing the server.
 
 Launch the Inspector:
@@ -274,7 +274,7 @@ Status values used below:
 | ID | Scenario | Status | Notes |
 |---|---|---|---|
 | MCP-01 | Connect and discover tools | PENDING | |
-| MCP-02 | Resolve an exact package ID | PASS | `NuGet.Versioning` resolved |
+| MCP-02 | Resolve an exact package ID | PASS | `Formula.SimpleRepo` resolved |
 | MCP-03 | Resolve a descriptive query | PENDING | |
 | MCP-04 | Accept a JSON-wrapped resolve query | PENDING | Regression test |
 | MCP-05 | List indexed versions | PENDING | |
@@ -309,7 +309,7 @@ Call `resolve_library`:
 
 ```json
 {
-  "query": "NuGet.Versioning",
+  "query": "Formula.SimpleRepo",
   "includePrerelease": false,
   "limit": 10,
   "environment": "public"
@@ -319,9 +319,9 @@ Call `resolve_library`:
 Expected:
 
 - `status` is `ok`.
-- A match has `libraryId` equal to `nuget:public/NuGet.Versioning`.
+- A match has `libraryId` equal to `nuget:public/Formula.SimpleRepo`.
 - `environment` is `public` and `sourceId` is `nuget.org`.
-- `displayName` is `NuGet.Versioning`.
+- `displayName` is `Formula.SimpleRepo`.
 - `recommendedVersion` is populated.
 - `confidence` is high for the exact ID match.
 
@@ -337,7 +337,7 @@ Call `resolve_library` with a concept rather than the package ID:
 }
 ```
 
-Expected: `NuGet.Versioning` is returned when indexed package metadata or
+Expected: `Formula.SimpleRepo` is returned when indexed package metadata or
 documentation contains matching terms.
 
 ### MCP-04: Accept a JSON-wrapped resolve query
@@ -345,7 +345,7 @@ documentation contains matching terms.
 In the `query` field, pass this entire value as a string:
 
 ```json
-{"query":"NuGet.Versioning","includePrerelease":false,"limit":10}
+{"query":"Formula.SimpleRepo","includePrerelease":false,"limit":10}
 ```
 
 Expected: the server unwraps the value and returns the same package match as
@@ -357,7 +357,7 @@ Call `list_versions`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
   "includePrerelease": false
 }
 ```
@@ -379,8 +379,8 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
-  "symbol": "NuGet.Versioning.NuGetVersion",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
+  "symbol": "Formula.SimpleRepo.NuGetVersion",
   "version": "<version>",
   "targetFramework": "net8.0",
   "includePrerelease": false
@@ -390,7 +390,7 @@ Call `get_symbol`:
 Expected:
 
 - `status` is `ok`.
-- The result identifies `NuGet.Versioning.NuGetVersion`.
+- The result identifies `Formula.SimpleRepo.NuGetVersion`.
 - `signature`, `documentation`, `assembly`, and target frameworks are present.
 - The citation uses a `nuget://` URI for the selected version.
 
@@ -400,7 +400,7 @@ Call `query_docs`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
   "question": "How do I parse a semantic version?",
   "version": "<version>",
   "targetFramework": "net8.0",
@@ -439,7 +439,7 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:public/NuGet.Versioning",
+  "libraryId": "nuget:public/Formula.SimpleRepo",
   "symbol": "Definitely.Missing",
   "version": "<version>"
 }
