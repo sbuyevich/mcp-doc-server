@@ -6,14 +6,29 @@
 - Confirm `data/docs.db` exists and `Formula.SimpleRepo` has been indexed.
 - Restart MCP Inspector after rebuilding or changing the server.
 
-Launch the Inspector:
+## Run Inspector for Testing
+
+Use 2 terminals.
+
+Terminal 1: start Host
 
 ```powershell
-npx -y @modelcontextprotocol/inspector dotnet run --project .\src\McpDocServer.Host\McpDocServer.Host.csproj
+.\src\McpDocServer.Host\bin\Debug\net10.0\McpDocServer.Host.exe `
+  --McpDocServer:Transport=http
 ```
 
-In the Inspector, select the stdio transport and connect. Server logs should
-appear without being written to the MCP protocol stream.
+Terminal 2: start visual Inspector
+
+```powershell
+npx -y @modelcontextprotocol/inspector
+```
+In Inspector:
+
+```
+Transport: Streamable HTTP
+URL: http://127.0.0.1:2222/mcp
+Click Connect
+```
 
 Status values used below:
 
