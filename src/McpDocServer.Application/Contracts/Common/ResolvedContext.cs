@@ -8,7 +8,7 @@ namespace McpDocServer.Application.Contracts.Common;
 public sealed record ResolvedContext
 {
     /// <summary>
-    /// Stable library identifier, such as nuget:Company.Customer.Client.
+    /// Stable library identifier, such as nuget:qa/Company.Customer.Client.
     /// </summary>
     [JsonPropertyName("libraryId")]
     public string? LibraryId { get; init; }
@@ -18,6 +18,12 @@ public sealed record ResolvedContext
     /// </summary>
     [JsonPropertyName("sourceId")]
     public string? SourceId { get; init; }
+
+    /// <summary>
+    /// Deployment environment containing the selected source.
+    /// </summary>
+    [JsonPropertyName("environment")]
+    public string? Environment { get; init; }
 
     /// <summary>
     /// Version searched by the tool.

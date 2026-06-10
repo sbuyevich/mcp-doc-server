@@ -10,7 +10,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\McpDocServer.Application\McpDocServer.Application.csproj" />
+    <ProjectReference Include="..\..\src\McpDocServer.Configuration\McpDocServer.Configuration.csproj" />
     <ProjectReference Include="..\..\src\McpDocServer.Host\McpDocServer.Host.csproj" />
+    <ProjectReference Include="..\..\src\McpDocServer.Indexing\McpDocServer.Indexing.csproj" />
+    <ProjectReference Include="..\..\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj" />
     <ProjectReference Include="..\..\src\McpDocServer.Infrastructure\McpDocServer.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>

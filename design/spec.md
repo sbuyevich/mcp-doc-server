@@ -34,8 +34,8 @@ grounded in indexed evidence and traceable through a stable citation.
 
 1. An agent calls `resolve_library` with a package name or concept.
 2. The server ranks indexed packages.
-3. The agent receives a stable `nuget:{packageId}` identifier and recommended
-   version.
+3. The agent receives one stable `nuget:{environment}/{packageId}` identifier
+   per indexed environment and its recommended version.
 
 ### 4.2 Retrieve documentation
 
@@ -95,6 +95,7 @@ Version parsing and ordering use `NuGet.Versioning`.
 NuGet sources are configured with:
 
 - Stable source name.
+- Required environment slug.
 - NuGet v3 service index URL or approved local package folder.
 - Allowed package IDs and prefixes.
 - Prerelease and unlisted policies.
@@ -133,7 +134,10 @@ Library resolution ranks:
 1. Exact package ID.
 2. Package ID prefix or token match.
 3. Description, tag, and indexed documentation match.
-4. Source-order and configured-recommendation boosts.
+4. Environment order, source order, and configured-recommendation boosts.
+
+Qualified library IDs restrict retrieval to one environment. Legacy
+`nuget:{packageId}` IDs select by environment order and then source order.
 
 Documentation retrieval ranks exact symbol matches above prose, then applies
 source-quality and deprecation adjustments. Results must be deterministic for
@@ -184,28 +188,49 @@ successful index.
 
 ## 12. Architecture
 
-- `Domain`: package indexing records and stable value types.
-- `Application`: indexing orchestration, retrieval handlers, contracts, and
-  policies.
+- `Configuration`: shared Host and Worker option contracts and validation.
+- `Indexing`: package indexing records, abstractions, orchestration, and stable
+  value types.
+- `Application`: retrieval handlers, MCP contracts, and policies.
 - `Infrastructure`: NuGet access, archive processing, metadata extraction,
   SQLite, and FTS5.
-- `Host`: MCP stdio transport, configuration, startup diagnostics, tools, and
-  resources.
+- `Host`: retrieval-only MCP transports, diagnostics, tools, and resources.
+- `Indexing.Worker`: sole index writer, immediate and scheduled refreshes, and
+  one-shot execution.
 
-Domain code must not depend on Host or Infrastructure.
+Configuration, Indexing, and Application have no project references. Host does
+not register indexing services or contact package sources.
 
 ## 13. Configuration
+
+Host:
 
 ```json
 {
   "McpDocServer": {
     "DatabasePath": "data/docs.db",
     "RecommendedVersions": {
-      "Company.Customer.Client": "4.2.0"
+      "Company.Customer.Client": "4.2.0",
+      "nuget:qa/Company.Customer.Client": "4.3.0-beta.1"
     },
+    "Retrieval": {
+      "EnvironmentOrder": ["production", "qa"],
+      "SourceOrder": ["internal"]
+    }
+  }
+}
+```
+
+Worker:
+
+```json
+{
+  "McpDocServer": {
+    "DatabasePath": "data/docs.db",
     "NuGetSources": [
       {
         "Name": "internal",
+        "Environment": "production",
         "ServiceIndex": "https://packages.example/v3/index.json",
         "PackagePrefixes": ["Company."],
         "PackageIds": ["Company.Customer.Client"],
@@ -215,7 +240,10 @@ Domain code must not depend on Host or Infrastructure.
         "MaxPackages": 100
       }
     ],
-    "RepositorySources": []
+    "RepositorySources": [],
+    "Indexing": {
+      "RefreshInterval": "01:00:00"
+    }
   }
 }
 ```
@@ -239,7 +267,7 @@ validation, diagnostics, and test projects.
 ### Stage 2: NuGet indexing
 
 Build safe package ingestion, metadata and documentation extraction, symbol
-inspection, SQLite persistence, and FTS5 indexing.
+inspection, SQLite persistence, FTS5 indexing, and a dedicated Worker process.
 
 ### Stage 3: NuGet retrieval
 

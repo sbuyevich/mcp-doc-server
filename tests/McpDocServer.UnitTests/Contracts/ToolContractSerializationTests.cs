@@ -49,7 +49,7 @@ public sealed class ToolContractSerializationTests
     public void RequestAndResponseContractsRoundTrip()
     {
         var request = new QueryDocsRequest(
-            "nuget:Company.Customer.Client",
+            "nuget:qa/Company.Customer.Client",
             "How do I register the client?",
             "4.2.0",
             "net10.0",
@@ -60,7 +60,9 @@ public sealed class ToolContractSerializationTests
             Data = new QueryDocsResult(),
             ResolvedContext = new ResolvedContext
             {
-                LibraryId = "nuget:Company.Customer.Client",
+                LibraryId = "nuget:qa/Company.Customer.Client",
+                Environment = "qa",
+                SourceId = "qa-feed",
                 Version = "4.2.0",
                 VersionSelectionReason = "requested"
             }
@@ -75,6 +77,7 @@ public sealed class ToolContractSerializationTests
         Assert.Equal(request, deserializedRequest);
         Assert.NotNull(deserializedResponse);
         Assert.Equal(ToolResultStatus.Ok, deserializedResponse.Status);
+        Assert.Equal("qa", deserializedResponse.ResolvedContext!.Environment);
         Assert.Equal("4.2.0", deserializedResponse.ResolvedContext!.Version);
     }
 }

@@ -8,7 +8,6 @@ namespace McpDocServer.Application.Retrieval.Services;
 internal sealed class GetSymbolHandler(
     IRetrievalConfigurationProvider configurationProvider,
     IRetrievalLibraryResolver libraryResolver,
-    IVersionResolver versionResolver,
     INuGetReadStore store,
     ICitationFactory citationFactory) : IGetSymbolHandler
 {
@@ -36,28 +35,32 @@ internal sealed class GetSymbolHandler(
 
         try
         {
-            var selection = await libraryResolver.ResolveAsync(
+            var resolution = await libraryResolver.ResolveAsync(
                 settings.DatabasePath,
                 libraryId,
+                settings.EnvironmentOrder,
                 settings.SourceOrder,
                 settings.RecommendedVersions,
+                request.Version,
+                request.ProjectVersion,
+                request.IncludePrerelease,
                 timeout.Token);
-            if (selection is null)
+            if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
+            {
+                return NotFound(
+                    "environment_not_found",
+                    $"Environment '{libraryId.Environment}' is not indexed.");
+            }
+
+            if (resolution.Status == LibraryResolutionStatus.LibraryNotFound)
             {
                 return NotFound(
                     "library_not_found",
                     $"Library '{request.LibraryId}' is not indexed.");
             }
 
-            settings.RecommendedVersions.TryGetValue(
-                selection.Library.PackageId,
-                out var recommendation);
-            var version = versionResolver.Resolve(
-                selection.Versions,
-                request.Version,
-                request.ProjectVersion,
-                recommendation,
-                request.IncludePrerelease);
+            var selection = resolution.Selection!;
+            var version = selection.Version;
             if (version is null)
             {
                 return NotFound(
@@ -244,8 +247,11 @@ internal sealed class GetSymbolHandler(
         VersionResolution version) =>
         new()
         {
-            LibraryId = new LibraryId(selection.Library.PackageId).ToString(),
+            LibraryId = new LibraryId(
+                selection.Library.PackageId,
+                selection.Library.Environment).ToString(),
             SourceId = selection.Library.SourceName,
+            Environment = selection.Library.Environment,
             Version = version.Version.Version,
             VersionSelectionReason = version.Reason
         };

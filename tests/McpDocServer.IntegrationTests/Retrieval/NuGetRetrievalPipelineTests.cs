@@ -4,9 +4,10 @@ using McpDocServer.Application.Contracts.GetSymbol;
 using McpDocServer.Application.Contracts.ListVersions;
 using McpDocServer.Application.Contracts.QueryDocs;
 using McpDocServer.Application.Contracts.ResolveLibrary;
-using McpDocServer.Application.Indexing.Services;
 using McpDocServer.Application.Retrieval.Services;
 using McpDocServer.Host;
+using McpDocServer.Indexing.Services;
+using McpDocServer.Indexing.Worker;
 using McpDocServer.IntegrationTests.Indexing;
 using McpDocServer.IntegrationTests.Mcp;
 using Microsoft.Extensions.Configuration;
@@ -47,7 +48,7 @@ public sealed class NuGetRetrievalPipelineTests
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, exact.Status);
             Assert.Equal(
-                $"nuget:{FixtureNuGetPackage.PackageId}",
+                $"nuget:test/{FixtureNuGetPackage.PackageId}",
                 Assert.Single(exact.Data!.Matches).LibraryId);
 
             var descriptive = await provider.GetRequiredService<IResolveLibraryHandler>()
@@ -61,6 +62,8 @@ public sealed class NuGetRetrievalPipelineTests
                     new ListVersionsRequest($"nuget:{FixtureNuGetPackage.PackageId}"),
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, versions.Status);
+            Assert.Equal("test", versions.ResolvedContext!.Environment);
+            Assert.Equal("fixture", versions.ResolvedContext.SourceId);
             Assert.Equal(["2.0.0", "1.2.3"], versions.Data!.Versions.Select(item => item.Version));
             Assert.Equal("1.2.3", versions.Data.RecommendedVersion);
             Assert.Equal("configured_recommendation", versions.Data.RecommendedVersionReason);
@@ -84,7 +87,7 @@ public sealed class NuGetRetrievalPipelineTests
                 .HandleAsync(
                     new GetSymbolRequest(
                         $"nuget:{FixtureNuGetPackage.PackageId}",
-                        "McpDocServer.Domain.Indexing.PackageIndexData",
+                        "McpDocServer.Indexing.Models.PackageIndexData",
                         Version: "1.2.3"),
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, symbol.Status);
@@ -129,7 +132,8 @@ public sealed class NuGetRetrievalPipelineTests
                     {
                         query = FixtureNuGetPackage.PackageId,
                         includePrerelease = false,
-                        limit = 10
+                        limit = 10,
+                        environment = "test"
                     })
                 },
                 cancellationToken: timeout.Token);
@@ -140,6 +144,9 @@ public sealed class NuGetRetrievalPipelineTests
             Assert.Equal(
                 FixtureNuGetPackage.PackageId,
                 Assert.Single(wrappedToolResponse.Data!.Matches).DisplayName);
+            Assert.Equal(
+                "test",
+                Assert.Single(wrappedToolResponse.Data.Matches).Environment);
 
             var templates = await server.Client.ListResourceTemplatesAsync(
                 cancellationToken: timeout.Token);
@@ -170,6 +177,7 @@ public sealed class NuGetRetrievalPipelineTests
             {
                 ["McpDocServer:DatabasePath"] = databasePath,
                 ["McpDocServer:NuGetSources:0:Name"] = "fixture",
+                ["McpDocServer:NuGetSources:0:Environment"] = "test",
                 ["McpDocServer:NuGetSources:0:ServiceIndex"] = feed,
                 ["McpDocServer:NuGetSources:0:PackageIds:0"] = FixtureNuGetPackage.PackageId,
                 ["McpDocServer:NuGetSources:0:IncludePrerelease"] = "true",
@@ -183,6 +191,7 @@ public sealed class NuGetRetrievalPipelineTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddMcpDocServerCore(configuration);
+        services.AddIndexingWorkerCore(configuration);
         return services.BuildServiceProvider(validateScopes: true);
     }
 }

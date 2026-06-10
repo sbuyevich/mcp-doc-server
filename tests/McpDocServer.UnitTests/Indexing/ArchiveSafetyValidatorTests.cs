@@ -1,5 +1,5 @@
 using System.IO.Compression;
-using McpDocServer.Application.Indexing.Models;
+using McpDocServer.Indexing.Models;
 using McpDocServer.Infrastructure.NuGet;
 
 namespace McpDocServer.UnitTests.Indexing;

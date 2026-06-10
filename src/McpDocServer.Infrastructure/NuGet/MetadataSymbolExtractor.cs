@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using McpDocServer.Domain.Indexing;
+using McpDocServer.Indexing.Models;
 
 namespace McpDocServer.Infrastructure.NuGet;
 

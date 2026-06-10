@@ -19,8 +19,7 @@ public sealed class StdioProtocolTests
                     Arguments =
                     [
                         HostAssemblyPath(),
-                        "--McpDocServer:Transport=stdio",
-                        "--McpDocServer:Indexing:RunOnStartup=false"
+                        "--McpDocServer:Transport=stdio"
                     ],
                     WorkingDirectory = RepositoryRoot(),
                     ShutdownTimeout = TimeSpan.FromSeconds(10),

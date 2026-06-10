@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using System.Text;
-using McpDocServer.Domain.Indexing;
+using McpDocServer.Indexing.Models;
 
 namespace McpDocServer.IntegrationTests.Indexing;
 
@@ -12,21 +12,22 @@ internal static class FixtureNuGetPackage
     public static string Create(
         string feedDirectory,
         string version = Version,
-        string? readmeText = null)
+        string? readmeText = null,
+        string packageId = PackageId)
     {
         Directory.CreateDirectory(feedDirectory);
-        var packagePath = Path.Combine(feedDirectory, $"{PackageId}.{version}.nupkg");
+        var packagePath = Path.Combine(feedDirectory, $"{packageId}.{version}.nupkg");
 
         using var file = new FileStream(packagePath, FileMode.Create, FileAccess.Write);
         using var archive = new ZipArchive(file, ZipArchiveMode.Create);
         WriteText(
             archive,
-            $"{PackageId}.nuspec",
+            $"{packageId}.nuspec",
             $$"""
             <?xml version="1.0" encoding="utf-8"?>
             <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
               <metadata>
-                <id>{{PackageId}}</id>
+                <id>{{packageId}}</id>
                 <version>{{version}}</version>
                 <title>Fixture Documentation</title>
                 <authors>MCP Tests</authors>
@@ -51,11 +52,11 @@ internal static class FixtureNuGetPackage
                 ?? $"# Fixture Documentation\n\nVersion {version} explains indexed package behavior.");
         WriteText(
             archive,
-            "lib/net10.0/McpDocServer.Domain.xml",
+            "lib/net10.0/McpDocServer.Indexing.xml",
             """
             <doc>
               <members>
-                <member name="T:McpDocServer.Domain.Indexing.PackageIndexData">
+                <member name="T:McpDocServer.Indexing.Models.PackageIndexData">
                   <summary>Fixture XML documentation for a public package index record.</summary>
                 </member>
               </members>
@@ -64,7 +65,7 @@ internal static class FixtureNuGetPackage
 
         var assemblyPath = typeof(PackageIndexData).Assembly.Location;
         var assemblyEntry = archive.CreateEntry(
-            "lib/net10.0/McpDocServer.Domain.dll",
+            "lib/net10.0/McpDocServer.Indexing.dll",
             CompressionLevel.NoCompression);
         using var source = File.OpenRead(assemblyPath);
         using var destination = assemblyEntry.Open();
@@ -75,17 +76,26 @@ internal static class FixtureNuGetPackage
 
     public static void ReplaceWithUnsafeArchive(string feedDirectory)
     {
-        var packagePath = Path.Combine(feedDirectory, $"{PackageId}.{Version}.nupkg");
+        CreateUnsafeArchive(feedDirectory, PackageId);
+    }
+
+    public static void CreateUnsafeArchive(
+        string feedDirectory,
+        string packageId,
+        string version = Version)
+    {
+        Directory.CreateDirectory(feedDirectory);
+        var packagePath = Path.Combine(feedDirectory, $"{packageId}.{version}.nupkg");
         using var file = new FileStream(packagePath, FileMode.Create, FileAccess.Write);
         using var archive = new ZipArchive(file, ZipArchiveMode.Create);
         WriteText(
             archive,
-            $"{PackageId}.nuspec",
+            $"{packageId}.nuspec",
             $$"""
             <package>
               <metadata>
-                <id>{{PackageId}}</id>
-                <version>{{Version}}</version>
+                <id>{{packageId}}</id>
+                <version>{{version}}</version>
                 <authors>MCP Tests</authors>
                 <description>Unsafe replacement fixture.</description>
               </metadata>

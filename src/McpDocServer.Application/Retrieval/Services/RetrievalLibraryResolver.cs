@@ -3,53 +3,88 @@ using McpDocServer.Application.Retrieval.Models;
 
 namespace McpDocServer.Application.Retrieval.Services;
 
-internal sealed class RetrievalLibraryResolver(INuGetReadStore store) :
+internal sealed class RetrievalLibraryResolver(
+    INuGetReadStore store,
+    IVersionResolver versionResolver) :
     IRetrievalLibraryResolver
 {
-    public async Task<ResolvedLibrarySelection?> ResolveAsync(
+    public async Task<LibraryResolutionResult> ResolveAsync(
         string databasePath,
         LibraryId libraryId,
+        IReadOnlyList<string> environmentOrder,
         IReadOnlyList<string> sourceOrder,
         IReadOnlyDictionary<string, string> recommendedVersions,
+        string? requestedVersion,
+        string? projectVersion,
+        bool includePrerelease,
         CancellationToken cancellationToken)
     {
+        if (libraryId.Environment is not null
+            && !await store.EnvironmentExistsAsync(
+                databasePath,
+                libraryId.Environment,
+                cancellationToken))
+        {
+            return new(LibraryResolutionStatus.EnvironmentNotFound);
+        }
+
         var libraries = await store.FindLibrariesAsync(
             databasePath,
             libraryId.PackageId,
             cancellationToken);
-        if (libraries.Count == 0)
+        var matchingLibraries = libraryId.Environment is null
+            ? libraries
+            : libraries
+                .Where(library => library.Environment.Equals(
+                    libraryId.Environment,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        if (matchingLibraries.Count == 0)
         {
-            return null;
+            return new(LibraryResolutionStatus.LibraryNotFound);
         }
 
-        recommendedVersions.TryGetValue(libraryId.PackageId, out var recommendation);
-        var candidates = new List<(ResolvedLibraryRecord Library, IReadOnlyList<IndexedVersionRecord> Versions)>();
-        foreach (var library in libraries)
+        var candidates = new List<ResolvedLibrarySelection>();
+        foreach (var library in matchingLibraries)
         {
-            candidates.Add((
+            var versions = await store.ListVersionsAsync(
+                databasePath,
+                library.LibraryId,
+                cancellationToken);
+            var recommendation = RecommendedVersionSelector.Find(
+                recommendedVersions,
+                library.Environment,
+                library.PackageId);
+            candidates.Add(new(
                 library,
-                await store.ListVersionsAsync(databasePath, library.LibraryId, cancellationToken)));
+                versions,
+                versionResolver.Resolve(
+                    versions,
+                    requestedVersion,
+                    projectVersion,
+                    recommendation,
+                    includePrerelease)));
         }
 
         var selected = candidates
-            .OrderBy(candidate => SourceIndex(sourceOrder, candidate.Library.SourceName))
-            .ThenByDescending(candidate =>
-                recommendation is not null
-                && candidate.Versions.Any(version =>
-                    version.Version.Equals(recommendation, StringComparison.OrdinalIgnoreCase)))
-            .ThenByDescending(candidate =>
-                candidate.Versions.Any(version => version.Listed && !version.Prerelease))
+            .OrderBy(candidate => candidate.Version is null)
+            .ThenBy(candidate => OrderIndex(environmentOrder, candidate.Library.Environment))
+            .ThenBy(candidate => candidate.Version?.WarningCodes.Contains(
+                "recommended_version_not_indexed",
+                StringComparer.Ordinal) ?? false)
+            .ThenBy(candidate => OrderIndex(sourceOrder, candidate.Library.SourceName))
+            .ThenBy(candidate => candidate.Library.Environment, StringComparer.Ordinal)
             .ThenBy(candidate => candidate.Library.SourceName, StringComparer.Ordinal)
             .First();
 
-        return new(selected.Library, selected.Versions);
+        return new(LibraryResolutionStatus.Resolved, selected);
     }
 
-    internal static int SourceIndex(IReadOnlyList<string> sourceOrder, string sourceName)
+    internal static int OrderIndex(IReadOnlyList<string> order, string value)
     {
-        for (var index = 0; index < sourceOrder.Count; index++)
+        for (var index = 0; index < order.Count; index++)
         {
-            if (sourceOrder[index].Equals(sourceName, StringComparison.OrdinalIgnoreCase))
+            if (order[index].Equals(value, StringComparison.OrdinalIgnoreCase))
             {
                 return index;
             }

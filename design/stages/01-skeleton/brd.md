@@ -34,15 +34,17 @@ The solution contains:
 ```text
 src/
   McpDocServer.Host/
+  McpDocServer.Configuration/
   McpDocServer.Application/
-  McpDocServer.Domain/
+  McpDocServer.Indexing/
   McpDocServer.Infrastructure/
+  McpDocServer.Indexing.Worker/
 tests/
   McpDocServer.UnitTests/
   McpDocServer.IntegrationTests/
 ```
 
-Domain code must not depend on Host or Infrastructure.
+Application and Indexing code must not depend on Host or Infrastructure.
 
 ### FR-2: MCP hosting
 

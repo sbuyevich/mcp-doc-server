@@ -1,16 +1,15 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using McpDocServer.Application.Indexing.Abstractions;
-using McpDocServer.Application.Indexing.Models;
-using McpDocServer.Domain.Indexing;
+using McpDocServer.Indexing.Abstractions;
+using McpDocServer.Indexing.Models;
 using Microsoft.Data.Sqlite;
 
 namespace McpDocServer.Infrastructure.Persistence;
 
 internal sealed class SqliteIndexStore : IIndexStore
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
 
     public async Task InitializeAsync(
         string databasePath,
@@ -49,15 +48,31 @@ internal sealed class SqliteIndexStore : IIndexStore
                 cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        else if (version == 1)
+        else if (version < SchemaVersion)
         {
             await using var transaction = connection.BeginTransaction();
-            await ExecuteNonQueryAsync(
-                connection,
-                transaction,
-                MigrationV2Sql,
-                cancellationToken);
-            await RefreshAllLibrarySearchAsync(connection, transaction, cancellationToken);
+            if (version == 1)
+            {
+                await ExecuteNonQueryAsync(
+                    connection,
+                    transaction,
+                    MigrationV2Sql,
+                    cancellationToken);
+                await RefreshAllLibrarySearchAsync(
+                    connection,
+                    transaction,
+                    cancellationToken);
+            }
+
+            if (version <= 2)
+            {
+                await ExecuteNonQueryAsync(
+                    connection,
+                    transaction,
+                    MigrationV3Sql,
+                    cancellationToken);
+            }
+
             await ExecuteNonQueryAsync(
                 connection,
                 transaction,
@@ -458,15 +473,17 @@ internal sealed class SqliteIndexStore : IIndexStore
             connection,
             transaction,
             """
-            INSERT INTO sources (id, name, service_index)
-            VALUES ($id, $name, $serviceIndex)
+            INSERT INTO sources (id, name, environment, service_index)
+            VALUES ($id, $name, $environment, $serviceIndex)
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
+                environment = excluded.environment,
                 service_index = excluded.service_index;
             """,
             [
                 ("$id", sourceId),
                 ("$name", source.Name),
+                ("$environment", source.Environment),
                 ("$serviceIndex", source.ServiceIndex)
             ],
             cancellationToken);
@@ -637,6 +654,7 @@ internal sealed class SqliteIndexStore : IIndexStore
         CREATE TABLE sources (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
+            environment TEXT NOT NULL,
             service_index TEXT NOT NULL,
             last_indexed_at TEXT NULL
         );
@@ -810,6 +828,16 @@ internal sealed class SqliteIndexStore : IIndexStore
             document_text,
             tokenize = 'unicode61'
         );
+        """;
+
+    private const string MigrationV3Sql =
+        """
+        ALTER TABLE sources
+            ADD COLUMN environment TEXT NOT NULL DEFAULT '';
+
+        UPDATE sources
+        SET environment = name
+        WHERE environment = '';
         """;
 
     private static async Task RefreshAllLibrarySearchAsync(

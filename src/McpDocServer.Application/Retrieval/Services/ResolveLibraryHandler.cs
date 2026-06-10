@@ -16,6 +16,14 @@ internal sealed class ResolveLibraryHandler(
     {
         Guard.NotBlank(request.Query, nameof(request.Query));
         Guard.Positive(request.Limit, nameof(request.Limit));
+        if (request.Environment is not null
+            && !LibraryId.IsValidEnvironment(request.Environment))
+        {
+            return NotFound(
+                "invalid_environment",
+                "The environment must contain only letters, numbers, '.', '_', or '-'.");
+        }
+
         var settings = configurationProvider.GetSettings();
         using var timeout = RetrievalHandlerSupport.CreateTimeout(
             settings.Limits.QueryTimeout,
@@ -23,15 +31,30 @@ internal sealed class ResolveLibraryHandler(
 
         try
         {
+            if (request.Environment is not null
+                && !await store.EnvironmentExistsAsync(
+                    settings.DatabasePath,
+                    request.Environment,
+                    timeout.Token))
+            {
+                return NotFound(
+                    "environment_not_found",
+                    $"Environment '{request.Environment}' is not indexed.");
+            }
+
             var limit = Math.Min(request.Limit, settings.Limits.MaxResults);
             var rawCandidates = await store.SearchLibrariesAsync(
                 settings.DatabasePath,
                 request.Query,
                 Math.Max(limit * 4, 20),
                 timeout.Token);
-            var matches = new List<(LibraryMatch Match, string PackageId, int SourceIndex)>();
+            var matches = new List<RankedLibraryMatch>();
 
-            foreach (var candidate in rawCandidates)
+            foreach (var candidate in rawCandidates.Where(candidate =>
+                         request.Environment is null
+                         || candidate.Environment.Equals(
+                             request.Environment,
+                             StringComparison.OrdinalIgnoreCase)))
             {
                 if (!request.IncludePrerelease
                     && candidate.LatestPrerelease
@@ -44,7 +67,10 @@ internal sealed class ResolveLibraryHandler(
                     settings.DatabasePath,
                     candidate.LibraryId,
                     timeout.Token);
-                settings.RecommendedVersions.TryGetValue(candidate.PackageId, out var recommendation);
+                var recommendation = RecommendedVersionSelector.Find(
+                    settings.RecommendedVersions,
+                    candidate.Environment,
+                    candidate.PackageId);
                 var resolution = versionResolver.Resolve(
                     versions,
                     null,
@@ -56,7 +82,10 @@ internal sealed class ResolveLibraryHandler(
                     continue;
                 }
 
-                var sourceIndex = RetrievalLibraryResolver.SourceIndex(
+                var environmentIndex = RetrievalLibraryResolver.OrderIndex(
+                    settings.EnvironmentOrder,
+                    candidate.Environment);
+                var sourceIndex = RetrievalLibraryResolver.OrderIndex(
                     settings.SourceOrder,
                     candidate.SourceName);
                 var score = candidate.ExactId
@@ -68,6 +97,11 @@ internal sealed class ResolveLibraryHandler(
                 {
                     score += 0.05;
                 }
+                var recommendationAvailable = recommendation is not null
+                    && versions.Any(version =>
+                        version.Version.Equals(
+                            recommendation,
+                            StringComparison.OrdinalIgnoreCase));
 
                 if (sourceIndex != int.MaxValue)
                 {
@@ -79,28 +113,40 @@ internal sealed class ResolveLibraryHandler(
                     score -= 0.10;
                 }
 
-                matches.Add((
+                matches.Add(new(
                     new LibraryMatch
                     {
-                        LibraryId = new LibraryId(candidate.PackageId).ToString(),
+                        LibraryId = new LibraryId(
+                            candidate.PackageId,
+                            candidate.Environment).ToString(),
                         Kind = "nuget",
                         DisplayName = candidate.PackageId,
+                        Environment = candidate.Environment,
+                        SourceId = candidate.SourceName,
                         RecommendedVersion = resolution.Version.Version,
                         Description = candidate.Description,
                         Confidence = Math.Clamp(score, 0, 1)
                     },
                     candidate.PackageId,
-                    sourceIndex));
+                    candidate.Environment,
+                    environmentIndex,
+                    sourceIndex,
+                    recommendationAvailable));
             }
 
             var selected = matches
-                .GroupBy(match => match.PackageId, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(match =>
+                    $"{match.PackageId.ToUpperInvariant()}\n{match.Environment.ToUpperInvariant()}",
+                    StringComparer.Ordinal)
                 .Select(group => group
-                    .OrderBy(item => item.SourceIndex)
+                    .OrderByDescending(item => item.RecommendationAvailable)
+                    .ThenBy(item => item.SourceIndex)
                     .ThenByDescending(item => item.Match.Confidence)
                     .ThenBy(item => item.Match.DisplayName, StringComparer.Ordinal)
                     .First())
                 .OrderByDescending(item => item.Match.Confidence)
+                .ThenBy(item => item.EnvironmentIndex)
+                .ThenBy(item => item.Environment, StringComparer.Ordinal)
                 .ThenBy(item => item.Match.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .Take(limit)
                 .Select(item => item.Match)
@@ -148,4 +194,20 @@ internal sealed class ResolveLibraryHandler(
             };
         }
     }
+
+    private static ResolveLibraryResponse NotFound(string code, string message) =>
+        new()
+        {
+            Status = ToolResultStatus.NotFound,
+            Data = new ResolveLibraryResult(),
+            Errors = [RetrievalHandlerSupport.Error(code, message)]
+        };
+
+    private sealed record RankedLibraryMatch(
+        LibraryMatch Match,
+        string PackageId,
+        string Environment,
+        int EnvironmentIndex,
+        int SourceIndex,
+        bool RecommendationAvailable);
 }

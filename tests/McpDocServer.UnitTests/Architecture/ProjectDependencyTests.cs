@@ -5,24 +5,76 @@ namespace McpDocServer.UnitTests.Architecture;
 public sealed class ProjectDependencyTests
 {
     [Fact]
-    public void DomainHasNoProjectReferences()
+    public void IndexingHasNoProjectReferences()
     {
-        var document = XDocument.Load(ProjectPath("src", "McpDocServer.Domain", "McpDocServer.Domain.csproj"));
+        var document = LoadProject("McpDocServer.Indexing");
 
         Assert.Empty(ProjectReferences(document));
     }
 
     [Fact]
-    public void ApplicationReferencesOnlyDomain()
+    public void ApplicationHasNoProjectReferences()
     {
-        var document = XDocument.Load(ProjectPath("src", "McpDocServer.Application", "McpDocServer.Application.csproj"));
+        var document = LoadProject("McpDocServer.Application");
 
-        var references = ProjectReferences(document);
+        Assert.Empty(ProjectReferences(document));
+    }
 
-        var reference = Assert.Single(references);
-        Assert.Equal(
-            @"..\McpDocServer.Domain\McpDocServer.Domain.csproj",
-            reference.Replace('/', '\\'));
+    [Fact]
+    public void ConfigurationHasNoProjectReferences()
+    {
+        var document = LoadProject("McpDocServer.Configuration");
+
+        Assert.Empty(ProjectReferences(document));
+    }
+
+    [Fact]
+    public void InfrastructureReferencesApplicationAndIndexing()
+    {
+        AssertProjectReferences(
+            "McpDocServer.Infrastructure",
+            "McpDocServer.Application",
+            "McpDocServer.Indexing");
+    }
+
+    [Fact]
+    public void HostReferencesApplicationConfigurationAndInfrastructure()
+    {
+        AssertProjectReferences(
+            "McpDocServer.Host",
+            "McpDocServer.Application",
+            "McpDocServer.Configuration",
+            "McpDocServer.Infrastructure");
+    }
+
+    [Fact]
+    public void WorkerReferencesConfigurationIndexingAndInfrastructure()
+    {
+        AssertProjectReferences(
+            "McpDocServer.Indexing.Worker",
+            "McpDocServer.Configuration",
+            "McpDocServer.Indexing",
+            "McpDocServer.Infrastructure");
+    }
+
+    private static void AssertProjectReferences(
+        string projectName,
+        params string[] expectedProjectNames)
+    {
+        var actual = ProjectReferences(LoadProject(projectName))
+            .Select(Path.GetFileNameWithoutExtension)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        var expected = expectedProjectNames
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expected, actual);
+    }
+
+    private static XDocument LoadProject(string projectName)
+    {
+        return XDocument.Load(ProjectPath("src", projectName, $"{projectName}.csproj"));
     }
 
     private static IReadOnlyList<string> ProjectReferences(XDocument document)
@@ -56,5 +108,4 @@ public sealed class ProjectDependencyTests
 
         throw new InvalidOperationException("Repository root was not found.");
     }
-
 }

@@ -3,7 +3,4 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="NuGet.Versioning" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\McpDocServer.Domain\McpDocServer.Domain.csproj" />
-  </ItemGroup>
 </Project>

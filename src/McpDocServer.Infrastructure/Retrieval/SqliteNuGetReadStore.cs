@@ -8,7 +8,7 @@ namespace McpDocServer.Infrastructure.Retrieval;
 
 internal sealed class SqliteNuGetReadStore : INuGetReadStore
 {
-    private const int RequiredSchemaVersion = 2;
+    private const int RequiredSchemaVersion = 3;
 
     public async Task<IReadOnlyList<LibraryCandidateRecord>> SearchLibrariesAsync(
         string databasePath,
@@ -26,6 +26,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 SELECT
                     l.id,
                     s.name,
+                    s.environment,
                     l.package_id,
                     lv.description,
                     lv.version,
@@ -56,16 +57,17 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
-                var packageId = reader.GetString(2);
+                var packageId = reader.GetString(3);
                 candidates[reader.GetString(0)] = new(
                     reader.GetString(0),
                     reader.GetString(1),
+                    reader.GetString(2),
                     packageId,
-                    GetNullableString(reader, 3),
                     GetNullableString(reader, 4),
-                    reader.GetInt64(5) != 0,
+                    GetNullableString(reader, 5),
                     reader.GetInt64(6) != 0,
                     reader.GetInt64(7) != 0,
+                    reader.GetInt64(8) != 0,
                     packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
                     packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
                     0);
@@ -81,6 +83,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 SELECT
                     l.id,
                     s.name,
+                    s.environment,
                     l.package_id,
                     lv.description,
                     lv.version,
@@ -114,17 +117,18 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             while (await reader.ReadAsync(cancellationToken))
             {
                 var libraryId = reader.GetString(0);
-                var packageId = reader.GetString(2);
+                var packageId = reader.GetString(3);
                 var textScore = Math.Max(0.35, 0.75 - (position++ * 0.02));
                 var record = new LibraryCandidateRecord(
                     libraryId,
                     reader.GetString(1),
+                    reader.GetString(2),
                     packageId,
-                    GetNullableString(reader, 3),
                     GetNullableString(reader, 4),
-                    reader.GetInt64(5) != 0,
+                    GetNullableString(reader, 5),
                     reader.GetInt64(6) != 0,
                     reader.GetInt64(7) != 0,
+                    reader.GetInt64(8) != 0,
                     packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
                     packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
                     textScore);
@@ -149,7 +153,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         await using var command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT l.id, s.name, l.package_id, lv.description
+            SELECT l.id, s.name, s.environment, l.package_id, lv.description
             FROM libraries l
             INNER JOIN sources s ON s.id = l.source_id
             LEFT JOIN library_versions lv ON lv.id = (
@@ -176,10 +180,33 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 reader.GetString(0),
                 reader.GetString(1),
                 reader.GetString(2),
-                GetNullableString(reader, 3)));
+                reader.GetString(3),
+                GetNullableString(reader, 4)));
         }
 
         return values;
+    }
+
+    public async Task<bool> EnvironmentExistsAsync(
+        string databasePath,
+        string environment,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(databasePath, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM sources
+                WHERE environment = $environment COLLATE NOCASE
+            );
+            """;
+        command.Parameters.AddWithValue("$environment", environment);
+
+        return Convert.ToInt64(
+            await command.ExecuteScalarAsync(cancellationToken),
+            CultureInfo.InvariantCulture) != 0;
     }
 
     public async Task<IReadOnlyList<IndexedVersionRecord>> ListVersionsAsync(

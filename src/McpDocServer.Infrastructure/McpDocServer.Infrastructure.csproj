@@ -7,5 +7,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\McpDocServer.Application\McpDocServer.Application.csproj" />
+    <ProjectReference Include="..\McpDocServer.Indexing\McpDocServer.Indexing.csproj" />
   </ItemGroup>
 </Project>

@@ -133,8 +133,6 @@ public sealed class HttpProtocolTests
         startInfo.ArgumentList.Add("--McpDocServer:Http:Path=/mcp");
         startInfo.ArgumentList.Add(
             $"--McpDocServer:DatabasePath={databasePath}");
-        startInfo.ArgumentList.Add("--McpDocServer:Indexing:RunOnStartup=false");
-
         return new Process { StartInfo = startInfo };
     }
 

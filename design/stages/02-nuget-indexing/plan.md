@@ -8,11 +8,15 @@ This stage does not add natural-language retrieval or ranking. It should make th
 
 ## Key Decisions
 
-- Keep the existing clean architecture boundaries:
-  - `McpDocServer.Domain`: source-neutral indexing records and value objects.
-  - `McpDocServer.Application`: indexing use-case ports, orchestration contracts, and result models.
+- Keep the feature and infrastructure boundaries:
+  - `McpDocServer.Indexing`: source-neutral records, value objects, use-case
+    ports, orchestration, and result models.
+  - `McpDocServer.Application`: retrieval use cases and MCP contracts.
   - `McpDocServer.Infrastructure`: NuGet client access, archive processing, symbol/doc extraction, and SQLite persistence.
-  - `McpDocServer.Host`: configuration binding, startup wiring, diagnostics, and optional one-shot indexing on startup.
+  - `McpDocServer.Configuration`: shared option contracts and validation.
+  - `McpDocServer.Host`: retrieval-only MCP composition and diagnostics.
+  - `McpDocServer.Indexing.Worker`: indexing configuration, immediate and
+    scheduled execution, and one-shot operation.
 - Use official NuGet client APIs:
   - `NuGet.Protocol` for source repositories, package search, metadata lookup, and package downloads.
   - `NuGet.Packaging` for `.nupkg` / `.nuspec` archive inspection.
@@ -42,6 +46,7 @@ Reference them from the infrastructure project only, unless a test project needs
 Extend `NuGetSourceOptions`:
 
 - `Name`
+- `Environment`
 - `ServiceIndex`
 - `PackagePrefixes`
 - `PackageIds`
@@ -52,26 +57,25 @@ Extend `NuGetSourceOptions`:
 
 Extend `IndexingOptions`:
 
-- `RunOnStartup`
 - `RefreshInterval`
 - `MaxPackageBytes`
 - `MaxArchiveEntries`
 - `MaxExtractedBytes`
 - `MaxCompressionRatio`
 - `MaxDocumentChars`
-- `DefaultMaxResults`
 - `PackageDownloadTimeout`
 
 Add validation rules:
 
 - Source names must be unique.
+- Every NuGet source must declare a valid environment slug.
 - A source must have a `ServiceIndex`.
 - A source must define at least one package prefix or explicit package id before indexing runs.
 - Size/count/time limits must be positive.
 
 Credential support for private feeds should be represented by an injectable provider interface with an anonymous default implementation. Do not log credentials or place secret-handling behavior directly in this stage.
 
-## Domain Model
+## Indexing Model
 
 Add source-neutral records/value objects for:
 
@@ -104,7 +108,7 @@ Add application-level contracts:
   - Runs indexing for configured sources.
   - Returns an index run summary with counts, status, warnings, and errors.
 - `IIndexingSourceProvider`
-  - Converts host configuration into source-neutral indexing source definitions.
+  - Converts Worker configuration into source-neutral indexing source definitions.
 - `IPackageSourceClient`
   - Discovers package identities and selected versions.
   - Downloads package archives into bounded temp files/streams.
@@ -287,7 +291,7 @@ Failure rules:
 - A failed run must not corrupt or partially replace the last good database state.
 - A malformed package should create an `index_run_errors` row and allow remaining packages to continue.
 
-## Host Integration
+## Worker Integration
 
 Register infrastructure services in dependency injection:
 
@@ -299,13 +303,15 @@ Register infrastructure services in dependency injection:
 - index coordinator
 - anonymous credential provider
 
-Add `NuGetIndexingHostedService`:
+Add the dedicated indexing Worker:
 
-- Runs once on startup only when `Indexing.RunOnStartup` is true.
+- Runs immediately, then waits `Indexing.RefreshInterval` after each completed
+  run before repeating.
+- Keeps refreshes sequential within one process.
+- Supports `--once`, returning exit `0` for success or no configured sources
+  and exit `1` for failed, partial, or unhandled runs.
 - Skips quietly when no sources are configured.
 - Logs source/run summaries.
-- Does not write MCP protocol messages to stdout.
-- Uses stderr/logging-safe behavior consistent with the Stage 1 stdio host.
 
 Extend diagnostics/status:
 
@@ -313,6 +319,8 @@ Extend diagnostics/status:
 - Include whether SQLite can open/create the configured database.
 - Include configured source count.
 - Include last index run summary when available.
+
+Keep the MCP Host retrieval-only so indexing cannot delay MCP availability.
 
 ## Fixture Strategy
 
@@ -379,7 +387,7 @@ dotnet test .\McpDocServer.slnx
 8. Implement metadata/document extraction and chunking.
 9. Implement metadata-only public symbol extraction.
 10. Implement index coordinator with staged atomic publish.
-11. Wire host services and optional startup indexing.
+11. Wire the dedicated Worker and split retrieval/indexing registrations.
 12. Add fixture packages and unit/integration tests.
 13. Update README with local indexing/test instructions.
 14. Run build/test and fix compile or behavioral failures.
@@ -395,14 +403,15 @@ dotnet test .\McpDocServer.slnx
 - Re-indexing is incremental and does not duplicate records.
 - Failed package updates preserve previous successful data.
 - Local fixture tests prove indexing without internet access.
-- Host can optionally run indexing on startup without breaking MCP stdio protocol.
+- Worker one-shot and continuous modes index without involving the MCP Host.
 
 ## Risks
 
 - NuGet prefix search may not discover unlisted packages. Use explicit package ids for unlisted indexing.
 - Metadata-only symbol extraction can hit assembly resolution gaps. Treat unresolved dependencies as warnings and keep useful public metadata.
 - FTS5 availability depends on the SQLite native library. Add an integration test that creates the FTS virtual table early.
-- Startup indexing could make MCP startup slow if enabled. Keep it opt-in and default off.
+- Multiple Worker processes can contend for one SQLite database. Deploy exactly
+  one writer until cross-process coordination is implemented.
 
 ## Definition Of Done
 

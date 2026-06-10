@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using McpDocServer.Application.Indexing.Abstractions;
+using McpDocServer.Indexing.Abstractions;
 
 namespace McpDocServer.Infrastructure.Indexing;
 

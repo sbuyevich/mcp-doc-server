@@ -1,9 +1,7 @@
 using McpDocServer.Application;
-using McpDocServer.Application.Indexing.Abstractions;
 using McpDocServer.Application.Retrieval.Abstractions;
-using McpDocServer.Host.Configuration;
+using McpDocServer.Configuration;
 using McpDocServer.Host.Diagnostics;
-using McpDocServer.Host.Indexing;
 using McpDocServer.Host.Retrieval;
 using McpDocServer.Host.Resources;
 using McpDocServer.Host.Tools;
@@ -25,20 +23,22 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddSingleton<IValidateOptions<McpDocServerOptions>, McpDocServerOptionsValidator>();
+        var optionsSection = configuration.GetSection(McpDocServerOptions.SectionName);
         services.AddOptions<McpDocServerOptions>()
-            .Bind(configuration.GetSection(McpDocServerOptions.SectionName))
+            .Bind(optionsSection)
+            .PostConfigure(options =>
+                options.RecommendedVersions =
+                    RecommendedVersionsConfigurationReader.Read(
+                        optionsSection.GetSection(nameof(options.RecommendedVersions))))
             .ValidateOnStart();
 
         services.AddApplication();
-        services.AddInfrastructure();
-        services.AddSingleton<IIndexingConfigurationProvider, OptionsIndexingConfigurationProvider>();
+        services.AddRetrievalInfrastructure();
         services.AddSingleton<IRetrievalConfigurationProvider>(provider =>
             new OptionsRetrievalConfigurationProvider(
-                provider.GetRequiredService<IOptions<McpDocServerOptions>>(),
-                configuration));
+                provider.GetRequiredService<IOptions<McpDocServerOptions>>()));
         services.AddSingleton<ToolRegistrationCatalog>();
         services.AddHostedService<StartupDiagnosticsHostedService>();
-        services.AddHostedService<NuGetIndexingHostedService>();
 
         return services;
     }
