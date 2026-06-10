@@ -6,6 +6,28 @@
 - Confirm `data/docs.db` exists and `Formula.SimpleRepo` has been indexed.
 - Restart MCP Inspector after rebuilding or changing the server.
 
+## Run Indexing
+
+Configure the packages to index in
+`src/McpDocServer.Indexing.Worker/appsettings.json`. The Worker and Host must
+use the same `McpDocServer:DatabasePath`.
+
+From the repository root, run one indexing refresh:
+
+```powershell
+dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj -- --once
+```
+
+Exit code `0` means indexing succeeded or no sources were configured. Exit
+code `1` means the run failed or completed with partial success. Wait for the
+one-shot command to finish successfully before starting the Host.
+
+To keep refreshing the index continuously, omit `--once`:
+
+```powershell
+dotnet run --project .\src\McpDocServer.Indexing.Worker\McpDocServer.Indexing.Worker.csproj
+```
+
 ## Run Inspector for Testing
 
 Use 2 terminals.
