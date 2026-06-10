@@ -13,6 +13,15 @@ public sealed class ProjectDependencyTests
     }
 
     [Fact]
+    public void IndexerCliReferencesIndexerAndInfrastructure()
+    {
+        AssertProjectReferences(
+            "McpDocServer.Indexer.Cli",
+            "McpDocServer.Indexer",
+            "McpDocServer.Infrastructure");
+    }
+
+    [Fact]
     public void ApplicationHasNoProjectReferences()
     {
         var document = LoadProject("McpDocServer.Application");
@@ -29,11 +38,12 @@ public sealed class ProjectDependencyTests
     }
 
     [Fact]
-    public void InfrastructureReferencesOnlyApplication()
+    public void InfrastructureReferencesApplicationAndIndexer()
     {
         AssertProjectReferences(
             "McpDocServer.Infrastructure",
-            "McpDocServer.Application");
+            "McpDocServer.Application",
+            "McpDocServer.Indexer");
     }
 
     [Fact]

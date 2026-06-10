@@ -6,8 +6,8 @@ using McpDocServer.Application.Contracts.QueryDocs;
 using McpDocServer.Application.Contracts.ResolveLibrary;
 using McpDocServer.Application.Retrieval.Services;
 using McpDocServer.Host;
+using McpDocServer.Indexer.Cli;
 using McpDocServer.Indexer.Services;
-using McpDocServer.Indexer;
 using McpDocServer.IntegrationTests.Indexing;
 using McpDocServer.IntegrationTests.Mcp;
 using Microsoft.Extensions.Configuration;
@@ -191,7 +191,7 @@ public sealed class NuGetRetrievalPipelineTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddMcpDocServerCore(configuration);
-        services.AddIndexer(configuration);
+        services.AddIndexerCli(configuration);
         return services.BuildServiceProvider(validateScopes: true);
     }
 }

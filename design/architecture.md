@@ -10,8 +10,9 @@ flowchart TD
     Host[McpDocServer.Host]
     Configuration[McpDocServer.Configuration]
     Application[McpDocServer.Application]
-    Infrastructure[McpDocServer.Infrastructure]
     Indexer[McpDocServer.Indexer]
+    Infrastructure[McpDocServer.Infrastructure]
+    IndexerCli[McpDocServer.Indexer.Cli]
     NuGet[NuGet source]
     Database[(SQLite and FTS5)]
 
@@ -20,13 +21,16 @@ flowchart TD
     Host --> Application
     Host --> Infrastructure
     Infrastructure --> Application
+    Infrastructure --> Indexer
+    IndexerCli --> Indexer
+    IndexerCli --> Infrastructure
+    Infrastructure --> NuGet
     Infrastructure --> Database
-    Indexer --> NuGet
-    Indexer --> Database
 ```
 
-The Host is retrieval-only. The Indexer is a separate one-shot console
-application and the sole index writer.
+The Host is retrieval-only. The Indexer library defines the indexing use
+cases, and the Indexer CLI is the separate one-shot composition root and sole
+index writer process.
 
 ## Projects
 
@@ -41,16 +45,30 @@ Contains MCP wire contracts, retrieval models and abstractions, and retrieval
 services. It has no project references and does not depend on SQLite, NuGet, or
 MCP transport implementations.
 
+### McpDocServer.Indexer
+
+Contains the inner indexing feature boundary:
+
+- Source-neutral indexing models.
+- Ports for source access, package processing, configuration, and persistence.
+- `IIndexCoordinator` and indexing orchestration.
+
+Indexer has no project references and contains no hosting, NuGet client,
+archive-processing, or SQLite implementation packages.
+
 ### McpDocServer.Infrastructure
 
-Implements Application retrieval abstractions:
+Implements Application retrieval abstractions and Indexer ports:
 
-- Read-only SQLite access for packages, versions, documents, and symbols.
-- FTS5 query construction and search.
+- Read-only SQLite and FTS5 retrieval.
+- NuGet discovery, metadata lookup, and bounded package download.
+- Safe archive inspection and metadata-only symbol extraction.
+- Document chunking and SHA-256 hashing.
+- SQLite schema migration, atomic publication, FTS5 writes, and run history.
 - Local dependency diagnostics.
 
-Infrastructure references only Application. It contains no index writer,
-NuGet download, archive processing, or MCP transport behavior.
+Infrastructure references Application and Indexer. Retrieval and indexing use
+separate registration methods so the Host never composes index writers.
 
 ### McpDocServer.Host
 
@@ -64,25 +82,19 @@ Is the MCP executable and retrieval composition root:
 
 The Host does not contact NuGet sources or register Indexer services.
 
-### McpDocServer.Indexer
+### McpDocServer.Indexer.Cli
 
-Is a self-contained console executable containing:
+Is the one-shot indexing executable and composition root:
 
-- Indexer configuration and validation.
-- Source-neutral models, abstractions, and indexing orchestration.
-- NuGet discovery, metadata lookup, and bounded package download.
-- Safe archive inspection and metadata-only symbol extraction.
-- Document chunking and SHA-256 hashing.
-- SQLite schema migration, atomic publication, FTS5 writes, and run history.
+- Owns indexing configuration, validation, and `appsettings.json`.
+- Converts CLI options into source-neutral Indexer settings.
+- Registers Indexer orchestration and Infrastructure indexing adapters.
+- Runs every configured source once and reports summaries.
 
-Each invocation indexes every configured source once and exits:
-
-- Exit `0` for success or no configured sources.
-- Exit `1` for partial success, failure, invalid configuration, or
-  cancellation.
-
-Recurring execution is delegated to an external scheduler. Only one Indexer
-process may write to a given SQLite database at a time.
+It exits `0` for success or no configured sources. It exits `1` for partial
+success, failure, invalid configuration, or cancellation. Recurring execution
+uses an external scheduler, and only one CLI process may write to a given
+SQLite database at a time.
 
 ## Dependency Rules
 
@@ -90,8 +102,9 @@ process may write to a given SQLite database at a time.
 Application    -> no project references
 Configuration  -> no project references
 Indexer        -> no project references
-Infrastructure -> Application
+Infrastructure -> Application + Indexer
 Host           -> Application + Configuration + Infrastructure
+Indexer.Cli    -> Indexer + Infrastructure
 Tests          -> projects required by each scenario
 ```
 
@@ -102,14 +115,14 @@ projects are absent.
 
 ```mermaid
 sequenceDiagram
-    participant Indexer
+    participant CLI as Indexer CLI
     participant Coordinator as IndexCoordinator
-    participant Source as IPackageSourceClient
-    participant Processor as IPackageProcessor
-    participant Store as IIndexStore
+    participant Source as Infrastructure IPackageSourceClient
+    participant Processor as Infrastructure IPackageProcessor
+    participant Store as Infrastructure IIndexStore
     participant DB as SQLite/FTS5
 
-    Indexer->>Coordinator: IndexAllAsync
+    CLI->>Coordinator: IndexAllAsync
     Coordinator->>Store: Initialize or migrate database
     Coordinator->>Source: Discover package versions
     loop Each package version
@@ -152,20 +165,25 @@ environments. Legacy identifiers select by `EnvironmentOrder` and
 ## Composition
 
 - `Application.AddApplication()` registers retrieval handlers and policies.
-- `Infrastructure.AddRetrievalInfrastructure()` registers read-only SQLite
-  retrieval implementations.
+- `Indexer.AddIndexer()` registers indexing orchestration only.
+- `Infrastructure.AddRetrievalInfrastructure()` registers read-only retrieval
+  adapters.
+- `Infrastructure.AddIndexingInfrastructure()` registers concrete indexing
+  adapters.
 - `Host.AddMcpDocServerCore()` binds Host configuration and composes retrieval.
-- `Indexer.AddIndexer(configuration)` binds Indexer configuration and composes
-  the complete indexing pipeline.
+- `Indexer.Cli.AddIndexerCli(configuration)` binds CLI configuration and
+  composes the complete indexing pipeline.
 - `Host.WithMcpDocServerTools()` publishes tools and resources.
 
 ## Testing Strategy
 
 - Unit tests cover configuration, archive safety, chunking, symbol extraction,
-  version selection, serialization, and architecture rules.
+  version selection, serialization, registration boundaries, and architecture
+  rules.
 - Integration tests index local fixture packages into temporary SQLite
   databases and exercise retrieval end to end.
-- Child-process tests verify Indexer exit codes and Host stdio/HTTP behavior.
+- Child-process tests verify Indexer CLI exit codes and Host stdio/HTTP
+  behavior.
 - Idempotency tests run indexing repeatedly and verify canonical rows remain
   unique while run history grows.
 
@@ -173,6 +191,8 @@ environments. Legacy identifiers select by `EnvironmentOrder` and
 
 - Keep MCP wire shapes in `Application.Contracts`.
 - Add retrieval integrations behind Application abstractions.
-- Add indexing behavior within the Indexer vertical boundary.
+- Keep indexing models, ports, and orchestration in Indexer.
+- Implement external indexing concerns in Infrastructure.
+- Keep executable configuration and lifecycle behavior in Indexer CLI.
 - Never execute package assemblies.
 - Preserve package-version isolation and citation traceability.

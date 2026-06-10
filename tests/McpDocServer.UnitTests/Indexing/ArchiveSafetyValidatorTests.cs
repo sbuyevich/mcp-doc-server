@@ -1,6 +1,6 @@
 using System.IO.Compression;
+using McpDocServer.Infrastructure.Indexing.NuGet;
 using McpDocServer.Indexer.Models;
-using McpDocServer.Indexer.NuGet;
 
 namespace McpDocServer.UnitTests.Indexing;
 

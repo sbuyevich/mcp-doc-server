@@ -9,13 +9,13 @@
 ## Run Indexing
 
 Configure the packages to index in
-`src/McpDocServer.Indexer/appsettings.json`. The Indexer and Host must
+`src/McpDocServer.Indexer.Cli/appsettings.json`. The Indexer CLI and Host must
 use the same `McpDocServer:DatabasePath`.
 
 From the repository root, run one indexing refresh:
 
 ```powershell
-dotnet run --project .\src\McpDocServer.Indexer\McpDocServer.Indexer.csproj
+dotnet run --project .\src\McpDocServer.Indexer.Cli\McpDocServer.Indexer.Cli.csproj
 ```
 
 Exit code `0` means indexing succeeded or no sources were configured. Exit

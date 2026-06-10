@@ -4,6 +4,7 @@
     <Project Path="src/McpDocServer.Configuration/McpDocServer.Configuration.csproj" />
     <Project Path="src/McpDocServer.Host/McpDocServer.Host.csproj" />
     <Project Path="src/McpDocServer.Indexer/McpDocServer.Indexer.csproj" />
+    <Project Path="src/McpDocServer.Indexer.Cli/McpDocServer.Indexer.Cli.csproj" />
     <Project Path="src/McpDocServer.Infrastructure/McpDocServer.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">

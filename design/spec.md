@@ -189,14 +189,17 @@ successful index.
 ## 12. Architecture
 
 - `Configuration`: Host option contracts and validation.
-- `Indexer`: one-shot console application containing indexing configuration,
-  records, orchestration, NuGet processing, and SQLite publication.
+- `Indexer`: reference-free indexing models, ports, and orchestration.
 - `Application`: retrieval handlers, MCP contracts, and policies.
-- `Infrastructure`: SQLite and FTS5 retrieval implementations.
+- `Infrastructure`: retrieval adapters plus concrete NuGet, package-processing,
+  hashing, and SQLite indexing implementations.
+- `Indexer.Cli`: one-shot indexing configuration and composition root.
 - `Host`: retrieval-only MCP transports, diagnostics, tools, and resources.
 
-Configuration, Indexer, and Application have no project references. Host does
-not register Indexer services or contact package sources.
+Configuration, Indexer, and Application have no project references.
+Infrastructure references Application and Indexer. The Indexer CLI references
+Indexer and Infrastructure. Host does not register Indexer services or contact
+package sources.
 
 ## 13. Configuration
 
@@ -218,7 +221,7 @@ Host:
 }
 ```
 
-Indexer:
+Indexer CLI:
 
 ```json
 {
@@ -265,7 +268,7 @@ validation, diagnostics, and test projects.
 ### Stage 2: NuGet indexing
 
 Build safe package ingestion, metadata and documentation extraction, symbol
-inspection, SQLite persistence, FTS5 indexing, and a dedicated Indexer process.
+inspection, SQLite persistence, FTS5 indexing, and a dedicated Indexer CLI.
 
 ### Stage 3: NuGet retrieval
 

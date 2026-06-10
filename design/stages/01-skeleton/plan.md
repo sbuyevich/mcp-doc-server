@@ -17,8 +17,9 @@ search index.
 - Use explicit tool registration so the public MCP surface is reviewed.
 - Use `System.Text.Json` contracts with stable property names.
 - Keep Configuration, Application, and Indexer free of project references.
-  Infrastructure depends only on Application; the Host depends on Application,
-  Configuration, and Infrastructure.
+  Infrastructure depends on Application and Indexer; the Host depends on
+  Application, Configuration, and Infrastructure; the Indexer CLI depends on
+  Indexer and Infrastructure.
 
 ## Project Structure
 
@@ -27,6 +28,7 @@ src/
   McpDocServer.Configuration/
   McpDocServer.Application/
   McpDocServer.Indexer/
+  McpDocServer.Indexer.Cli/
   McpDocServer.Infrastructure/
   McpDocServer.Host/
 tests/

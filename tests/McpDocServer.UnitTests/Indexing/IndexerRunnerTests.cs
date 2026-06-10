@@ -1,5 +1,5 @@
-using McpDocServer.Indexer;
-using McpDocServer.Indexer.Configuration;
+using McpDocServer.Indexer.Cli;
+using McpDocServer.Indexer.Cli.Configuration;
 using McpDocServer.Indexer.Models;
 using McpDocServer.Indexer.Services;
 using Microsoft.Extensions.Logging.Abstractions;

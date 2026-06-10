@@ -1,4 +1,5 @@
 using McpDocServer.Host;
+using McpDocServer.Indexer.Abstractions;
 using McpDocServer.Indexer.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,5 +36,8 @@ public sealed class StartupDiagnosticsTests
 
         using var provider = services.BuildServiceProvider();
         Assert.Null(provider.GetService<IIndexCoordinator>());
+        Assert.Null(provider.GetService<IIndexStore>());
+        Assert.Null(provider.GetService<IPackageSourceClient>());
+        Assert.Null(provider.GetService<IPackageProcessor>());
     }
 }

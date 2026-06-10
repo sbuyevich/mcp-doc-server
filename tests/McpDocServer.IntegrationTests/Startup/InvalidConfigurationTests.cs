@@ -1,5 +1,5 @@
 using McpDocServer.Host;
-using McpDocServer.Indexer;
+using McpDocServer.Indexer.Cli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -54,7 +54,7 @@ public sealed class InvalidConfigurationTests
                 ["McpDocServer:Indexing:MaxPackageBytes"] = "0"
             });
         builder.Logging.ClearProviders();
-        builder.Services.AddIndexer(builder.Configuration);
+        builder.Services.AddIndexerCli(builder.Configuration);
 
         using var host = builder.Build();
 

@@ -1,4 +1,4 @@
-using McpDocServer.Indexer.Configuration;
+using McpDocServer.Indexer.Cli.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace McpDocServer.UnitTests.Configuration;

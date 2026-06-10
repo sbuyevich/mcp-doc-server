@@ -153,11 +153,11 @@ public sealed class IndexerProcessTests
         return Path.Combine(
             RepositoryRoot(),
             "src",
-            "McpDocServer.Indexer",
+            "McpDocServer.Indexer.Cli",
             "bin",
             buildConfiguration,
             "net10.0",
-            "McpDocServer.Indexer.dll");
+            "McpDocServer.Indexer.Cli.dll");
     }
 
     private static string RepositoryRoot()

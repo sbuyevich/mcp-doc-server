@@ -20,18 +20,18 @@ dotnet build .\McpDocServer.slnx --no-restore
 dotnet test .\McpDocServer.slnx --no-build --no-restore
 ```
 
-## Run the Indexer
+## Run the Indexer CLI
 
-The Indexer is the only process that writes the index. Each invocation indexes
-all configured sources once and exits:
+The Indexer CLI is the only process that writes the index. Each invocation
+indexes all configured sources once and exits:
 
 ```powershell
-dotnet run --project .\src\McpDocServer.Indexer\McpDocServer.Indexer.csproj
+dotnet run --project .\src\McpDocServer.Indexer.Cli\McpDocServer.Indexer.Cli.csproj
 ```
 
 It exits `0` after a successful run or when no sources are configured. It exits
 `1` after a failed, partially successful, invalid, or canceled run. Use an
-external scheduler for recurring indexing, and run only one Indexer process
+external scheduler for recurring indexing, and run only one Indexer CLI process
 against a SQLite database at a time.
 
 ## Run over stdio
@@ -130,7 +130,7 @@ NuGet feed.
 
 ## Configuration
 
-The Host and Indexer have separate `appsettings.json` files. Both use the
+The Host and Indexer CLI have separate `appsettings.json` files. Both use the
 `McpDocServer` root section and standard .NET environment-variable and
 command-line overrides.
 
@@ -163,7 +163,7 @@ Host configuration:
 }
 ```
 
-Indexer configuration:
+Indexer CLI configuration:
 
 ```json
 {
@@ -198,7 +198,7 @@ Indexer configuration:
 
 ### Configuration loading and overrides
 
-The Host and Indexer load their own `appsettings.json` from the executable
+The Host and Indexer CLI load their own `appsettings.json` from the executable
 directory. This makes JSON configuration independent of the directory from
 which the executable was launched.
 
@@ -223,7 +223,7 @@ so `00:02:00` means two minutes. Invalid values fail startup rather than
 silently falling back.
 
 Configuration is read when the process starts. Restart the Host or rerun the
-Indexer after changing its `appsettings.json`.
+Indexer CLI after changing its `appsettings.json`.
 
 ### Host values
 
@@ -247,9 +247,9 @@ Indexer after changing its `appsettings.json`.
 
 | Setting | Meaning and rules |
 | --- | --- |
-| `DatabasePath` | SQLite index created and updated by the Indexer. Use exactly the same path as the Host. Relative paths are resolved from the process working directory. |
-| `NuGetSources` | NuGet feeds or local package folders to index. The collection may be empty; the Indexer then succeeds without doing work. |
-| `RepositorySources` | Reserved configuration for planned repository indexing. Entries are validated, but the current Indexer indexes only `NuGetSources`; leave this as `[]`. |
+| `DatabasePath` | SQLite index created and updated by the Indexer CLI. Use exactly the same path as the Host. Relative paths are resolved from the process working directory. |
+| `NuGetSources` | NuGet feeds or local package folders to index. The collection may be empty; the Indexer CLI then succeeds without doing work. |
+| `RepositorySources` | Reserved configuration for planned repository indexing. Entries are validated, but the current Indexer CLI indexes only `NuGetSources`; leave this as `[]`. |
 | `Indexing` | Download, archive-safety, and document-processing limits described below. |
 
 ### NuGet source values
@@ -258,7 +258,7 @@ Indexer after changing its `appsettings.json`.
 | --- | --- |
 | `Name` | Stable, human-readable feed identity such as `nuget.org` or `internal-qa`. It appears in citations and `SourceId`. Names must be non-empty and unique, case-insensitively, across NuGet and repository sources. |
 | `Environment` | Selection label such as `production`, `qa`, or `public`. It is required, compared case-insensitively, and may contain only letters, numbers, `.`, `_`, or `-`. Multiple feeds may share an environment. |
-| `ServiceIndex` | Absolute HTTP/HTTPS NuGet v3 service-index URL, or a local package-folder path. Relative local paths are resolved from the Indexer working directory; use an absolute path for predictable deployments. |
+| `ServiceIndex` | Absolute HTTP/HTTPS NuGet v3 service-index URL, or a local package-folder path. Relative local paths are resolved from the Indexer CLI working directory; use an absolute path for predictable deployments. |
 | `PackageIds` | Explicit package IDs to index. Use this for a known package, especially an unlisted package that search cannot discover. Empty strings are invalid. |
 | `PackagePrefixes` | NuGet search terms used to discover package IDs, followed by a case-insensitive `StartsWith` check. For example, `Company.` discovers matching listed packages. Search normally cannot discover new unlisted packages. |
 | `IncludePrerelease` | When `true`, discovery and metadata selection may include prerelease versions. Retrieval still requires its request-level `IncludePrerelease` flag before selecting a prerelease by fallback or recommendation. |
@@ -314,7 +314,7 @@ Version selection uses this precedence:
 5. Latest indexed, listed stable version.
 6. Latest indexed, listed prerelease when the request allows prereleases.
 
-The Indexer must first index a version before the Host can select it.
+The Indexer CLI must first index a version before the Host can select it.
 
 ### Paths, upgrades, and credentials
 
@@ -323,8 +323,8 @@ JSON file is loaded from the executable directory, relative database and local
 source paths are resolved from the process working directory. If relative
 paths are used, launch both processes from the same directory.
 
-After upgrading an existing database, run the Indexer before the Host so it can
-apply the current schema migration.
+After upgrading an existing database, run the Indexer CLI before the Host so it
+can apply the current schema migration.
 
 On a successful run, the database contains package versions, artifacts,
 dependencies, target frameworks, public symbols, document chunks, FTS5 rows,

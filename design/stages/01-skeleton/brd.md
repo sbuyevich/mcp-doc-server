@@ -37,6 +37,7 @@ src/
   McpDocServer.Configuration/
   McpDocServer.Application/
   McpDocServer.Indexer/
+  McpDocServer.Indexer.Cli/
   McpDocServer.Infrastructure/
 tests/
   McpDocServer.UnitTests/
@@ -44,7 +45,8 @@ tests/
 ```
 
 Application, Configuration, and Indexer must not have project references.
-Infrastructure depends only on Application.
+Infrastructure depends on Application and Indexer. The Indexer CLI depends on
+Indexer and Infrastructure.
 
 ### FR-2: MCP hosting
 

@@ -9,11 +9,12 @@ This stage does not add natural-language retrieval or ranking. It should make th
 ## Key Decisions
 
 - Keep retrieval layered and indexing vertical:
-  - `McpDocServer.Indexer`: one-shot console application containing
-    source-neutral records, ports, orchestration, NuGet processing, and SQLite
-    publication.
+  - `McpDocServer.Indexer`: reference-free source-neutral records, ports, and
+    orchestration.
   - `McpDocServer.Application`: retrieval use cases and MCP contracts.
-  - `McpDocServer.Infrastructure`: read-only SQLite retrieval.
+  - `McpDocServer.Infrastructure`: retrieval adapters plus concrete NuGet,
+    package-processing, and SQLite indexing implementations.
+  - `McpDocServer.Indexer.Cli`: one-shot configuration and composition root.
   - `McpDocServer.Configuration`: Host option contracts and validation.
   - `McpDocServer.Host`: retrieval-only MCP composition and diagnostics.
 - Use official NuGet client APIs:
@@ -38,8 +39,8 @@ Add central package versions in `Directory.Packages.props`:
 - `Microsoft.Data.Sqlite`
 - `System.Reflection.MetadataLoadContext`
 
-Reference them from the Indexer project only, unless a test project needs
-fixture helpers directly.
+Reference implementation packages from Infrastructure, unless a test project
+needs fixture helpers directly.
 
 ## Configuration
 
@@ -294,17 +295,16 @@ Failure rules:
 
 ## Indexer Integration
 
-Register Indexer services through `AddIndexer(IConfiguration)`:
+Register indexing through separate composition methods:
 
-- NuGet source client
-- package processor
-- document chunker
-- content hasher
-- SQLite index store
-- index coordinator
-- anonymous credential provider
+- `AddIndexer()` registers the index coordinator.
+- `AddIndexingInfrastructure()` registers the NuGet source client, package
+  processor, document chunker, content hasher, SQLite index store, and
+  anonymous credential provider.
+- `AddIndexerCli(IConfiguration)` binds CLI configuration and composes both
+  registrations.
 
-The Indexer process:
+The Indexer CLI:
 
 - Runs all configured sources once per invocation.
 - Returns exit `0` for success or no configured sources and exit `1` for
@@ -378,7 +378,7 @@ dotnet test .\McpDocServer.slnx
 ## Work Packages
 
 1. Update packages and project references.
-2. Add Indexer configuration/options and validation.
+2. Add Indexer CLI configuration/options and validation.
 3. Add Indexer records and identity normalization helpers.
 4. Add Indexer ports and run result contracts.
 5. Implement SQLite schema, migrations, and store primitives.
@@ -387,8 +387,7 @@ dotnet test .\McpDocServer.slnx
 8. Implement metadata/document extraction and chunking.
 9. Implement metadata-only public symbol extraction.
 10. Implement index coordinator with staged atomic publish.
-11. Wire the self-contained Indexer and retrieval-only Infrastructure
-    registration.
+11. Wire Indexer orchestration, Infrastructure adapters, and the Indexer CLI.
 12. Add fixture packages and unit/integration tests.
 13. Update README with local indexing/test instructions.
 14. Run build/test and fix compile or behavioral failures.
@@ -411,8 +410,8 @@ dotnet test .\McpDocServer.slnx
 - NuGet prefix search may not discover unlisted packages. Use explicit package ids for unlisted indexing.
 - Metadata-only symbol extraction can hit assembly resolution gaps. Treat unresolved dependencies as warnings and keep useful public metadata.
 - FTS5 availability depends on the SQLite native library. Add an integration test that creates the FTS virtual table early.
-- Multiple Indexer processes can contend for one SQLite database. Deploy exactly
-  one writer until cross-process coordination is implemented.
+- Multiple Indexer CLI processes can contend for one SQLite database. Deploy
+  exactly one writer until cross-process coordination is implemented.
 
 ## Definition Of Done
 
