@@ -105,6 +105,7 @@ public sealed class IndexingWorkerProcessTests
         startInfo.ArgumentList.Add("--once");
         startInfo.ArgumentList.Add($"--McpDocServer:DatabasePath={databasePath}");
         startInfo.ArgumentList.Add("--McpDocServer:NuGetSources:0:Name=fixture");
+        startInfo.ArgumentList.Add("--McpDocServer:NuGetSources:0:Environment=test");
         startInfo.ArgumentList.Add(
             $"--McpDocServer:NuGetSources:0:ServiceIndex={feed}");
         for (var index = 0; index < packageIds.Count; index++)

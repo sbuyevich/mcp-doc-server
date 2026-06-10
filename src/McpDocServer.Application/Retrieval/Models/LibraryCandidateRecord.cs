@@ -3,6 +3,7 @@ namespace McpDocServer.Application.Retrieval.Models;
 public sealed record LibraryCandidateRecord(
     string LibraryId,
     string SourceName,
+    string Environment,
     string PackageId,
     string? Description,
     string? LatestVersion,

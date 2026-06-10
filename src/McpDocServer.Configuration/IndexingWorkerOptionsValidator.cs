@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 
 namespace McpDocServer.Configuration;
 
@@ -8,6 +9,10 @@ namespace McpDocServer.Configuration;
 public sealed class IndexingWorkerOptionsValidator :
     IValidateOptions<IndexingWorkerOptions>
 {
+    private static readonly Regex EnvironmentPattern = new(
+        "^[A-Za-z0-9._-]+$",
+        RegexOptions.CultureInvariant);
+
     public ValidateOptionsResult Validate(string? name, IndexingWorkerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -101,6 +106,12 @@ public sealed class IndexingWorkerOptionsValidator :
     {
         foreach (var source in sources)
         {
+            if (!IsEnvironment(source.Environment))
+            {
+                failures.Add(
+                    $"NuGet source '{source.Name}' Environment must contain only letters, numbers, '.', '_', or '-'.");
+            }
+
             if (!ConfigurationValidation.IsNuGetSource(source.ServiceIndex))
             {
                 failures.Add(
@@ -135,6 +146,10 @@ public sealed class IndexingWorkerOptionsValidator :
             }
         }
     }
+
+    private static bool IsEnvironment(string value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && EnvironmentPattern.IsMatch(value);
 
     private static void ValidateRepositorySources(
         IEnumerable<RepositorySourceOptions> sources,

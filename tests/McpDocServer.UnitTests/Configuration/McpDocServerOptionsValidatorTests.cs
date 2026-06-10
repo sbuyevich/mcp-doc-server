@@ -90,13 +90,31 @@ public sealed class McpDocServerOptionsValidatorTests
             {
                 Retrieval = new RetrievalOptions
                 {
+                    EnvironmentOrder = ["qa", "QA"],
                     SourceOrder = ["nuget.org", "NuGet.org"],
                     DefaultMaxResults = 0
                 }
             });
 
+        AssertFailure(result, "EnvironmentOrder");
         AssertFailure(result, "SourceOrder");
         AssertFailure(result, "DefaultMaxResults");
+    }
+
+    [Fact]
+    public void InvalidEnvironmentOrderSlugFails()
+    {
+        var result = _validator.Validate(
+            null,
+            new McpDocServerOptions
+            {
+                Retrieval = new RetrievalOptions
+                {
+                    EnvironmentOrder = ["quality assurance"]
+                }
+            });
+
+        AssertFailure(result, "EnvironmentOrder");
     }
 
     [Fact]
@@ -113,6 +131,22 @@ public sealed class McpDocServerOptionsValidatorTests
             });
 
         AssertFailure(result, "valid semantic version");
+    }
+
+    [Fact]
+    public void InvalidQualifiedRecommendationKeyFails()
+    {
+        var result = _validator.Validate(
+            null,
+            new McpDocServerOptions
+            {
+                RecommendedVersions = new Dictionary<string, string>
+                {
+                    ["nuget:bad environment/Company.Customer"] = "4.2.0"
+                }
+            });
+
+        AssertFailure(result, "environment-qualified library ID");
     }
 
     private static void AssertFailure(

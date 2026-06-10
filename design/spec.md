@@ -34,8 +34,8 @@ grounded in indexed evidence and traceable through a stable citation.
 
 1. An agent calls `resolve_library` with a package name or concept.
 2. The server ranks indexed packages.
-3. The agent receives a stable `nuget:{packageId}` identifier and recommended
-   version.
+3. The agent receives one stable `nuget:{environment}/{packageId}` identifier
+   per indexed environment and its recommended version.
 
 ### 4.2 Retrieve documentation
 
@@ -95,6 +95,7 @@ Version parsing and ordering use `NuGet.Versioning`.
 NuGet sources are configured with:
 
 - Stable source name.
+- Required environment slug.
 - NuGet v3 service index URL or approved local package folder.
 - Allowed package IDs and prefixes.
 - Prerelease and unlisted policies.
@@ -133,7 +134,10 @@ Library resolution ranks:
 1. Exact package ID.
 2. Package ID prefix or token match.
 3. Description, tag, and indexed documentation match.
-4. Source-order and configured-recommendation boosts.
+4. Environment order, source order, and configured-recommendation boosts.
+
+Qualified library IDs restrict retrieval to one environment. Legacy
+`nuget:{packageId}` IDs select by environment order and then source order.
 
 Documentation retrieval ranks exact symbol matches above prose, then applies
 source-quality and deprecation adjustments. Results must be deterministic for
@@ -206,9 +210,11 @@ Host:
   "McpDocServer": {
     "DatabasePath": "data/docs.db",
     "RecommendedVersions": {
-      "Company.Customer.Client": "4.2.0"
+      "Company.Customer.Client": "4.2.0",
+      "nuget:qa/Company.Customer.Client": "4.3.0-beta.1"
     },
     "Retrieval": {
+      "EnvironmentOrder": ["production", "qa"],
       "SourceOrder": ["internal"]
     }
   }
@@ -224,6 +230,7 @@ Worker:
     "NuGetSources": [
       {
         "Name": "internal",
+        "Environment": "production",
         "ServiceIndex": "https://packages.example/v3/index.json",
         "PackagePrefixes": ["Company."],
         "PackageIds": ["Company.Customer.Client"],

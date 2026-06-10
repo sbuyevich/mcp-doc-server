@@ -8,8 +8,7 @@ namespace McpDocServer.Application.Retrieval.Services;
 
 internal sealed class ListVersionsHandler(
     IRetrievalConfigurationProvider configurationProvider,
-    IRetrievalLibraryResolver libraryResolver,
-    IVersionResolver versionResolver) : IListVersionsHandler
+    IRetrievalLibraryResolver libraryResolver) : IListVersionsHandler
 {
     public async Task<ListVersionsResponse> HandleAsync(
         ListVersionsRequest request,
@@ -28,19 +27,31 @@ internal sealed class ListVersionsHandler(
 
         try
         {
-            var selection = await libraryResolver.ResolveAsync(
+            var resolution = await libraryResolver.ResolveAsync(
                 settings.DatabasePath,
                 libraryId,
+                settings.EnvironmentOrder,
                 settings.SourceOrder,
                 settings.RecommendedVersions,
+                null,
+                null,
+                request.IncludePrerelease,
                 timeout.Token);
-            if (selection is null)
+            if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
+            {
+                return NotFound(
+                    "environment_not_found",
+                    $"Environment '{libraryId.Environment}' is not indexed.");
+            }
+
+            if (resolution.Status == LibraryResolutionStatus.LibraryNotFound)
             {
                 return NotFound(
                     "library_not_found",
                     $"Library '{request.LibraryId}' is not indexed.");
             }
 
+            var selection = resolution.Selection!;
             var versions = selection.Versions
                 .Where(version => request.IncludePrerelease || !version.Prerelease)
                 .Select(version => (Record: version, Parsed: Parse(version.Version)))
@@ -57,15 +68,7 @@ internal sealed class ListVersionsHandler(
                 })
                 .ToArray();
 
-            settings.RecommendedVersions.TryGetValue(
-                selection.Library.PackageId,
-                out var recommendation);
-            var recommended = versionResolver.Resolve(
-                selection.Versions,
-                null,
-                null,
-                recommendation,
-                request.IncludePrerelease);
+            var recommended = selection.Version;
             var warnings = recommended?.WarningCodes
                 .Select(code => RetrievalHandlerSupport.Warning(
                     code,
@@ -89,8 +92,11 @@ internal sealed class ListVersionsHandler(
                 },
                 ResolvedContext = new ResolvedContext
                 {
-                    LibraryId = new LibraryId(selection.Library.PackageId).ToString(),
-                    SourceId = selection.Library.SourceName
+                    LibraryId = new LibraryId(
+                        selection.Library.PackageId,
+                        selection.Library.Environment).ToString(),
+                    SourceId = selection.Library.SourceName,
+                    Environment = selection.Library.Environment
                 },
                 Warnings = warnings
             };

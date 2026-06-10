@@ -7,6 +7,8 @@ public sealed class NuGetSourceOptions
 {
     public string Name { get; set; } = string.Empty;
 
+    public string Environment { get; set; } = string.Empty;
+
     public string ServiceIndex { get; set; } = string.Empty;
 
     public List<string> PackagePrefixes { get; set; } = [];

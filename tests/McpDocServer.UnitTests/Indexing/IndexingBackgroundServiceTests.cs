@@ -22,6 +22,7 @@ public sealed class IndexingBackgroundServiceTests
                     new NuGetSourceOptions
                     {
                         Name = "fixture",
+                        Environment = "test",
                         ServiceIndex = "fixture",
                         PackageIds = ["Fixture.Package"]
                     }
@@ -62,6 +63,7 @@ public sealed class IndexingBackgroundServiceTests
                     new NuGetSourceOptions
                     {
                         Name = "fixture",
+                        Environment = "test",
                         ServiceIndex = "fixture",
                         PackageIds = ["Fixture.Package"]
                     }

@@ -59,20 +59,16 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
 
     private static void ValidateRetrieval(RetrievalOptions options, List<string> failures)
     {
-        if (options.SourceOrder.Any(string.IsNullOrWhiteSpace))
-        {
-            failures.Add("McpDocServer:Retrieval:SourceOrder contains an empty source name.");
-        }
-
-        var duplicateSource = options.SourceOrder
-            .Where(source => !string.IsNullOrWhiteSpace(source))
-            .GroupBy(source => source, StringComparer.OrdinalIgnoreCase)
-            .FirstOrDefault(group => group.Count() > 1);
-        if (duplicateSource is not null)
-        {
-            failures.Add(
-                $"McpDocServer:Retrieval:SourceOrder contains duplicate source '{duplicateSource.Key}'.");
-        }
+        ValidateOrder(
+            options.EnvironmentOrder,
+            "McpDocServer:Retrieval:EnvironmentOrder",
+            validateEnvironment: true,
+            failures);
+        ValidateOrder(
+            options.SourceOrder,
+            "McpDocServer:Retrieval:SourceOrder",
+            validateEnvironment: false,
+            failures);
 
         if (options.DefaultMaxResults <= 0)
         {
@@ -108,6 +104,36 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
         }
     }
 
+    private static void ValidateOrder(
+        IReadOnlyList<string> values,
+        string path,
+        bool validateEnvironment,
+        List<string> failures)
+    {
+        if (values.Any(string.IsNullOrWhiteSpace))
+        {
+            failures.Add($"{path} contains an empty value.");
+        }
+
+        if (validateEnvironment
+            && values.Any(value =>
+                !string.IsNullOrWhiteSpace(value)
+                && !EnvironmentPattern().IsMatch(value)))
+        {
+            failures.Add(
+                $"{path} values must contain only letters, numbers, '.', '_', or '-'.");
+        }
+
+        var duplicate = values
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
+        {
+            failures.Add($"{path} contains duplicate value '{duplicate.Key}'.");
+        }
+    }
+
     private static void ValidateRecommendedVersions(
         IReadOnlyDictionary<string, string> versions,
         List<string> failures)
@@ -117,6 +143,19 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
             if (string.IsNullOrWhiteSpace(packageId))
             {
                 failures.Add("RecommendedVersions contains an empty package ID.");
+            }
+            else if (packageId.StartsWith("nuget:", StringComparison.OrdinalIgnoreCase))
+            {
+                var payload = packageId["nuget:".Length..];
+                var separator = payload.IndexOf('/');
+                if (separator <= 0
+                    || separator == payload.Length - 1
+                    || payload.IndexOf('/', separator + 1) >= 0
+                    || !EnvironmentPattern().IsMatch(payload[..separator]))
+                {
+                    failures.Add(
+                        $"RecommendedVersions key '{packageId}' is not a valid environment-qualified library ID.");
+                }
             }
 
             if (string.IsNullOrWhiteSpace(version) || !SemanticVersionPattern().IsMatch(version))
@@ -131,4 +170,7 @@ public sealed partial class McpDocServerOptionsValidator : IValidateOptions<McpD
         @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$",
         RegexOptions.CultureInvariant)]
     private static partial Regex SemanticVersionPattern();
+
+    [GeneratedRegex("^[A-Za-z0-9._-]+$", RegexOptions.CultureInvariant)]
+    private static partial Regex EnvironmentPattern();
 }

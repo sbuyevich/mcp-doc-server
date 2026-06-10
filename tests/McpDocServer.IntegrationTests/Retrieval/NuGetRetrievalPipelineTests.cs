@@ -48,7 +48,7 @@ public sealed class NuGetRetrievalPipelineTests
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, exact.Status);
             Assert.Equal(
-                $"nuget:{FixtureNuGetPackage.PackageId}",
+                $"nuget:test/{FixtureNuGetPackage.PackageId}",
                 Assert.Single(exact.Data!.Matches).LibraryId);
 
             var descriptive = await provider.GetRequiredService<IResolveLibraryHandler>()
@@ -62,6 +62,8 @@ public sealed class NuGetRetrievalPipelineTests
                     new ListVersionsRequest($"nuget:{FixtureNuGetPackage.PackageId}"),
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, versions.Status);
+            Assert.Equal("test", versions.ResolvedContext!.Environment);
+            Assert.Equal("fixture", versions.ResolvedContext.SourceId);
             Assert.Equal(["2.0.0", "1.2.3"], versions.Data!.Versions.Select(item => item.Version));
             Assert.Equal("1.2.3", versions.Data.RecommendedVersion);
             Assert.Equal("configured_recommendation", versions.Data.RecommendedVersionReason);
@@ -130,7 +132,8 @@ public sealed class NuGetRetrievalPipelineTests
                     {
                         query = FixtureNuGetPackage.PackageId,
                         includePrerelease = false,
-                        limit = 10
+                        limit = 10,
+                        environment = "test"
                     })
                 },
                 cancellationToken: timeout.Token);
@@ -141,6 +144,9 @@ public sealed class NuGetRetrievalPipelineTests
             Assert.Equal(
                 FixtureNuGetPackage.PackageId,
                 Assert.Single(wrappedToolResponse.Data!.Matches).DisplayName);
+            Assert.Equal(
+                "test",
+                Assert.Single(wrappedToolResponse.Data.Matches).Environment);
 
             var templates = await server.Client.ListResourceTemplatesAsync(
                 cancellationToken: timeout.Token);
@@ -171,6 +177,7 @@ public sealed class NuGetRetrievalPipelineTests
             {
                 ["McpDocServer:DatabasePath"] = databasePath,
                 ["McpDocServer:NuGetSources:0:Name"] = "fixture",
+                ["McpDocServer:NuGetSources:0:Environment"] = "test",
                 ["McpDocServer:NuGetSources:0:ServiceIndex"] = feed,
                 ["McpDocServer:NuGetSources:0:PackageIds:0"] = FixtureNuGetPackage.PackageId,
                 ["McpDocServer:NuGetSources:0:IncludePrerelease"] = "true",

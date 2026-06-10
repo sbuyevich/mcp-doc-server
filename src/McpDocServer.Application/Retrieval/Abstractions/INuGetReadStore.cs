@@ -15,6 +15,11 @@ public interface INuGetReadStore
         string packageId,
         CancellationToken cancellationToken);
 
+    Task<bool> EnvironmentExistsAsync(
+        string databasePath,
+        string environment,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyList<IndexedVersionRecord>> ListVersionsAsync(
         string databasePath,
         string libraryId,

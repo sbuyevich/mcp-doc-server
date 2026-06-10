@@ -25,6 +25,7 @@ internal sealed class OptionsIndexingConfigurationProvider(
                 limits.PackageDownloadTimeout),
             value.NuGetSources.Select(source => new IndexSourceDefinition(
                 source.Name,
+                source.Environment,
                 ResolveSource(source.ServiceIndex),
                 source.PackagePrefixes.ToArray(),
                 source.PackageIds.ToArray(),

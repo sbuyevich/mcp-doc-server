@@ -5,6 +5,8 @@ namespace McpDocServer.Configuration;
 /// </summary>
 public sealed class RetrievalOptions
 {
+    public List<string> EnvironmentOrder { get; set; } = [];
+
     public List<string> SourceOrder { get; set; } = [];
 
     public int DefaultMaxResults { get; set; } = 8;

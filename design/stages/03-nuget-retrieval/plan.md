@@ -23,7 +23,9 @@ methods, request models, and response models are ordinary indexed symbols.
 
 - Search exact package IDs, prefixes, metadata, and indexed text.
 - Apply source-order and configured-recommendation boosts.
-- Return stable `nuget:{packageId}` identifiers and confidence scores.
+- Return stable `nuget:{environment}/{packageId}` identifiers and confidence
+  scores while accepting legacy `nuget:{packageId}` identifiers through
+  configured environment and source precedence.
 - Deduplicate package matches across sources deterministically.
 
 ### Version resolution

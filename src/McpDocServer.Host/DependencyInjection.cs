@@ -23,8 +23,13 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddSingleton<IValidateOptions<McpDocServerOptions>, McpDocServerOptionsValidator>();
+        var optionsSection = configuration.GetSection(McpDocServerOptions.SectionName);
         services.AddOptions<McpDocServerOptions>()
-            .Bind(configuration.GetSection(McpDocServerOptions.SectionName))
+            .Bind(optionsSection)
+            .PostConfigure(options =>
+                options.RecommendedVersions =
+                    RecommendedVersionsConfigurationReader.Read(
+                        optionsSection.GetSection(nameof(options.RecommendedVersions))))
             .ValidateOnStart();
 
         services.AddApplication();

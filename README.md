@@ -104,13 +104,15 @@ select **Streamable HTTP** in Inspector, and connect to
 After connecting:
 
 1. Open **Tools** and call `resolve_library` with an indexed package ID.
-2. Pass the returned `nuget:{packageId}` value to `list_versions`.
+2. Pass the returned `nuget:{environment}/{packageId}` value to
+   `list_versions`.
 3. Call `query_docs` or `get_symbol` with a concrete version.
 4. Open **Resources** to read cited artifact and symbol URIs.
 
 ## Tools
 
-- `resolve_library`: find an indexed NuGet package by ID or descriptive text.
+- `resolve_library`: find indexed NuGet packages by ID or descriptive text,
+  optionally within one environment.
 - `query_docs`: retrieve ranked, version-isolated documentation evidence.
 - `get_symbol`: inspect a public type or member, including XML documentation.
 - `list_versions`: list indexed semantic versions and the recommendation.
@@ -147,8 +149,12 @@ Host configuration:
       "Path": "/mcp"
     },
     "DatabasePath": "data/docs.db",
-    "RecommendedVersions": {},
+    "RecommendedVersions": {
+      "Company.Foundation": "4.0.0",
+      "nuget:qa/Company.Foundation": "4.1.0-beta.1"
+    },
     "Retrieval": {
+      "EnvironmentOrder": [ "production", "qa" ],
       "SourceOrder": [ "internal" ],
       "DefaultMaxResults": 8,
       "MaxResults": 25,
@@ -167,7 +173,15 @@ Worker configuration:
 {
   "McpDocServer": {
     "DatabasePath": "data/docs.db",
-    "NuGetSources": [],
+    "NuGetSources": [
+      {
+        "Name": "internal",
+        "Environment": "production",
+        "ServiceIndex": "https://packages.example/v3/index.json",
+        "PackageIds": [ "Company.Foundation" ],
+        "PackagePrefixes": []
+      }
+    ],
     "RepositorySources": [],
     "Indexing": {
       "RefreshInterval": "01:00:00",
@@ -193,15 +207,32 @@ Source collections may be empty. The Host validates transport and retrieval
 settings independently from the Worker, which validates source definitions and
 indexing limits. The Host never contacts NuGet sources.
 
-`Retrieval:SourceOrder` controls source precedence without requiring source
-definitions in the Host. Give both processes the same `DatabasePath`; when it
-is relative, launch both from the same working directory.
+`Retrieval:EnvironmentOrder` controls environment precedence for legacy
+`nuget:{packageId}` identifiers. `Retrieval:SourceOrder` controls feed
+precedence within an environment. Values absent from either list sort after
+configured values by ordinal name.
+
+Discovery returns one qualified match per environment:
+
+```text
+nuget:qa/Company.Foundation
+nuget:production/Company.Foundation
+```
+
+Qualified IDs never fall back to another environment. Legacy IDs remain
+supported and use the configured precedence. Exact `Version` requests take
+precedence over recommended versions.
+
+Give both processes the same `DatabasePath`; when it is relative, launch both
+from the same working directory. After upgrading an existing database, run the
+Worker before the Host so it applies schema migration v3.
 
 Example NuGet source:
 
 ```json
 {
   "Name": "internal",
+  "Environment": "production",
   "ServiceIndex": "https://packages.example/v3/index.json",
   "PackagePrefixes": [ "Company." ],
   "PackageIds": [ "Company.Foundation" ],
@@ -211,6 +242,9 @@ Example NuGet source:
   "MaxPackages": 100
 }
 ```
+
+`Environment` is required and must contain only letters, numbers, `.`, `_`, or
+`-`. Multiple sources may share the same environment.
 
 `ServiceIndex` may also be a local package-folder path, which is useful for
 offline fixtures. Prefix discovery normally cannot find new unlisted packages;

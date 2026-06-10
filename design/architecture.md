@@ -210,16 +210,24 @@ sequenceDiagram
 
 The public tool surface is:
 
-- `resolve_library`: ranks indexed packages and returns `nuget:{packageId}` IDs.
+- `resolve_library`: ranks indexed packages and returns one
+  `nuget:{environment}/{packageId}` ID per environment. Its optional
+  environment filter restricts discovery.
 - `list_versions`: returns indexed semantic versions and version-selection
   context.
 - `query_docs`: retrieves ranked documentation and symbol evidence for one
   selected package version.
 - `get_symbol`: returns a public type or member and related symbol evidence.
 
-Retrieval is version isolated. Handlers resolve a package and version before
-querying documents or symbols, enforce configured result and response limits,
-and return evidence with stable `nuget://` citations.
+Retrieval is environment and version isolated. Qualified library IDs never
+cross environments. Legacy `nuget:{packageId}` IDs select an environment and
+source through `EnvironmentOrder` and `SourceOrder`. Handlers then resolve one
+version, enforce configured result and response limits, and return evidence
+with stable `nuget://` citations.
+
+Environment is persisted source metadata and is not an authorization boundary.
+Several concrete NuGet sources may belong to one environment; citations retain
+the concrete source name.
 
 The Host also exposes resource templates for reading the exact indexed artifact
 or symbol referenced by a citation.

@@ -32,9 +32,12 @@ public sealed class ToolDiscoveryTests
         Assert.Contains("query", inputSchema, StringComparison.Ordinal);
         Assert.Contains("includePrerelease", inputSchema, StringComparison.Ordinal);
         Assert.Contains("limit", inputSchema, StringComparison.Ordinal);
+        Assert.Contains("environment", inputSchema, StringComparison.Ordinal);
 
         var outputSchema = resolveLibrary.ReturnJsonSchema!.Value.GetRawText();
         Assert.Contains("status", outputSchema, StringComparison.Ordinal);
         Assert.Contains("errors", outputSchema, StringComparison.Ordinal);
+        Assert.Contains("environment", outputSchema, StringComparison.Ordinal);
+        Assert.Contains("sourceId", outputSchema, StringComparison.Ordinal);
     }
 }

@@ -27,6 +27,7 @@ public sealed class IndexingWorkerOptionsValidatorTests
                     new NuGetSourceOptions
                     {
                         Name = "internal",
+                        Environment = "qa",
                         ServiceIndex = "https://packages.example/v3/index.json",
                         PackageIds = ["Company.Package"]
                     }
@@ -56,6 +57,7 @@ public sealed class IndexingWorkerOptionsValidatorTests
                     new NuGetSourceOptions
                     {
                         Name = "internal",
+                        Environment = "bad environment",
                         ServiceIndex = "ftp://packages.example/index.json",
                         PackagePrefixes = ["Company.", ""],
                         MaxVersionsPerPackage = 0
@@ -70,6 +72,7 @@ public sealed class IndexingWorkerOptionsValidatorTests
             });
 
         AssertFailure(result, "ServiceIndex URI");
+        AssertFailure(result, "Environment");
         AssertFailure(result, "empty package prefix");
         AssertFailure(result, "RefreshInterval");
         AssertFailure(result, "MaxPackageBytes");
@@ -88,12 +91,63 @@ public sealed class IndexingWorkerOptionsValidatorTests
                     new NuGetSourceOptions
                     {
                         Name = "internal",
+                        Environment = "qa",
                         ServiceIndex = "https://packages.example/v3/index.json"
                     }
                 ]
             });
 
         AssertFailure(result, "package prefix or package ID");
+    }
+
+    [Fact]
+    public void NuGetSourceRequiresEnvironment()
+    {
+        var result = _validator.Validate(
+            null,
+            new IndexingWorkerOptions
+            {
+                NuGetSources =
+                [
+                    new NuGetSourceOptions
+                    {
+                        Name = "internal",
+                        ServiceIndex = "https://packages.example/v3/index.json",
+                        PackageIds = ["Company.Package"]
+                    }
+                ]
+            });
+
+        AssertFailure(result, "Environment");
+    }
+
+    [Fact]
+    public void MultipleSourcesMayShareEnvironment()
+    {
+        var result = _validator.Validate(
+            null,
+            new IndexingWorkerOptions
+            {
+                NuGetSources =
+                [
+                    new NuGetSourceOptions
+                    {
+                        Name = "qa-primary",
+                        Environment = "qa",
+                        ServiceIndex = "https://packages.example/primary/v3/index.json",
+                        PackageIds = ["Company.Package"]
+                    },
+                    new NuGetSourceOptions
+                    {
+                        Name = "qa-secondary",
+                        Environment = "QA",
+                        ServiceIndex = "https://packages.example/secondary/v3/index.json",
+                        PackageIds = ["Company.Package"]
+                    }
+                ]
+            });
+
+        Assert.Equal(ValidateOptionsResult.Success, result);
     }
 
     private static void AssertFailure(

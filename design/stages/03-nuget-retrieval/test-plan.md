@@ -55,7 +55,7 @@ Open **Tools** and confirm these tools are present:
 
 Open **Resources** and confirm templates exist for artifact and symbol URIs.
 
-Expected: all five tools have input and output schemas, and the server remains
+Expected: all four tools have input and output schemas, and the server remains
 connected.
 
 ### MCP-02: Resolve an exact package ID
@@ -66,14 +66,16 @@ Call `resolve_library`:
 {
   "query": "NuGet.Versioning",
   "includePrerelease": false,
-  "limit": 10
+  "limit": 10,
+  "environment": "public"
 }
 ```
 
 Expected:
 
 - `status` is `ok`.
-- A match has `libraryId` equal to `nuget:NuGet.Versioning`.
+- A match has `libraryId` equal to `nuget:public/NuGet.Versioning`.
+- `environment` is `public` and `sourceId` is `nuget.org`.
 - `displayName` is `NuGet.Versioning`.
 - `recommendedVersion` is populated.
 - `confidence` is high for the exact ID match.
@@ -110,7 +112,7 @@ Call `list_versions`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "includePrerelease": false
 }
 ```
@@ -132,7 +134,7 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "symbol": "NuGet.Versioning.NuGetVersion",
   "version": "<version>",
   "targetFramework": "net8.0",
@@ -153,7 +155,7 @@ Call `query_docs`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "question": "How do I parse a semantic version?",
   "version": "<version>",
   "targetFramework": "net8.0",
@@ -192,7 +194,7 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "symbol": "Definitely.Missing",
   "version": "<version>"
 }
@@ -243,7 +245,6 @@ Expected: all unit and integration tests pass.
 Stage 3 is complete when all applicable rows are `PASS`, citations resolve
 through MCP Resources, responses remain version-isolated, and missing evidence
 produces explicit statuses rather than generated content.
-
 # Stage 3 MCP Inspector Test Plan
 
 ## Prerequisites
@@ -310,14 +311,16 @@ Call `resolve_library`:
 {
   "query": "NuGet.Versioning",
   "includePrerelease": false,
-  "limit": 10
+  "limit": 10,
+  "environment": "public"
 }
 ```
 
 Expected:
 
 - `status` is `ok`.
-- A match has `libraryId` equal to `nuget:NuGet.Versioning`.
+- A match has `libraryId` equal to `nuget:public/NuGet.Versioning`.
+- `environment` is `public` and `sourceId` is `nuget.org`.
 - `displayName` is `NuGet.Versioning`.
 - `recommendedVersion` is populated.
 - `confidence` is high for the exact ID match.
@@ -354,7 +357,7 @@ Call `list_versions`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "includePrerelease": false
 }
 ```
@@ -376,7 +379,7 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "symbol": "NuGet.Versioning.NuGetVersion",
   "version": "<version>",
   "targetFramework": "net8.0",
@@ -397,7 +400,7 @@ Call `query_docs`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "question": "How do I parse a semantic version?",
   "version": "<version>",
   "targetFramework": "net8.0",
@@ -436,7 +439,7 @@ Call `get_symbol`:
 
 ```json
 {
-  "libraryId": "nuget:NuGet.Versioning",
+  "libraryId": "nuget:public/NuGet.Versioning",
   "symbol": "Definitely.Missing",
   "version": "<version>"
 }
